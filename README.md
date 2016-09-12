@@ -56,3 +56,4 @@ github_watchers{repo="prometheus-rancher-exporter",user="infinityworksltd"} 6.0
 ```
 
 ## Metadata
+[![](https://images.microbadger.com/badges/image/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own image badge on microbadger.com") [![](https://images.microbadger.com/badges/version/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own version badge on microbadger.com")
