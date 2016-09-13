@@ -17,7 +17,8 @@ class GitHubCollector(object):
       self._star_metrics = GaugeMetricFamily('github_stars', 'Gauge of stars from the public API', labels=["repo", "user"])
       self._open_issues_metrics = GaugeMetricFamily('github_open_issues', 'Gauge of issues from the public API', labels=["repo", "user"])
       self._watchers_metrics = GaugeMetricFamily('github_watchers', 'Gauge of watchers from the public API', labels=["repo", "user"])
-
+      self._has_issues_metrics = GaugeMetricFamily('github_has_issues', 'Gauge showing if the repo has issues, from the public API', labels=["repo", "user"])
+      self._subscribers_count = GaugeMetricFamily('github_subscribers', 'Gauge of subscribers from the public API', labels=["repo", "user"])
 
       for repo in repos:
           print("Getting JSON for " + repo)
@@ -30,6 +31,9 @@ class GitHubCollector(object):
       yield self._star_metrics
       yield self._open_issues_metrics
       yield self._watchers_metrics
+      yield self._has_issues_metrics
+      yield self._watchers_metrics
+      yield self._subscribers_count
 
   def _get_json(self, repo):
       print("Getting JSON Payload for " + repo)
@@ -46,8 +50,9 @@ class GitHubCollector(object):
       self._fork_metrics.add_metric([repo_name, user_name], value=self._response_json['forks'])
       self._star_metrics.add_metric([repo_name, user_name], value=self._response_json['stargazers_count'])
       self._open_issues_metrics.add_metric([repo_name, user_name], value=self._response_json['open_issues'])
-      self._watchers_metrics.add_metric([repo_name, user_name], value=self._response_json['watchers'])
-
+      self._watchers_metrics.add_metric([repo_name, user_name], value=self._response_json['watchers_count'])
+      self._has_issues_metrics.add_metric([repo_name, user_name], value=self._response_json['has_issues'])
+      self._subscribers_count.add_metric([repo_name, user_name], value=self._response_json['subscribers_count'])
 
 if __name__ == '__main__':
   start_http_server(int(os.getenv('BIND_PORT')))
