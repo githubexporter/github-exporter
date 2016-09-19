@@ -5,7 +5,7 @@ Exposes basic metrics for your repositories from the GitHub API, to a Prometheus
 ## Configuration
 
 This exporter is setup to take two parameters from environment variables:
-`BIND_PORT` The port you wish to run the container on, defaults to 1234
+`BIND_PORT` The port you wish to run the container on, defaults to 9171
 `REPOS` The images you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
 
 ## Install and deploy
@@ -28,7 +28,7 @@ github-exporter:
     tty: true
     stdin_open: true
     expose:
-      - 1234:1234
+      - 9171:9171
     image: infinityworks/github-exporter
 ```
 

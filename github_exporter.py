@@ -22,12 +22,12 @@ class GitHubCollector(object):
       gauges[metric] = GaugeMetricFamily('%s_%s' % (METRIC_PREFIX, metric), '%s' % metric, value=None, labels=LABELS)
         
     for repo in repos:
-        self._get_json(repo)
-        self._check_rate()
-        self._get_metrics(gauges, metrics)
+      self._get_json(repo)
+      self._check_rate()
+      self._get_metrics(gauges, metrics)
 
     for metric in metrics:
-        yield gauges[metric]
+      yield gauges[metric]
 
 
   def _get_json(self, repo):
@@ -45,16 +45,16 @@ class GitHubCollector(object):
     print("Requests remaing this hour", remaining)
 
     if not remaining:
-        print("Rate limit exceeded, sleeping for 60 seconds")
-        time.sleep(60)
+      print("Rate limit exceeded, sleeping for 60 seconds")
+      time.sleep(60)
 
   def _get_metrics(self, gauges, metrics):
     repo_name = self._response_json['name']
     user_name = self._response_json['owner']['login']
 
     for metric, field in metrics.items():
-        print("Metric %s being set from %s from the API" % (metric, field))
-        gauges[metric].add_metric([repo_name, user_name], value=self._response_json[field])
+      print("Metric %s being set from %s from the API" % (metric, field))
+      gauges[metric].add_metric([repo_name, user_name], value=self._response_json[field])
 
 
 def sigterm_handler(_signo, _stack_frame):
