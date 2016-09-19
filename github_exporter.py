@@ -23,7 +23,7 @@ class GitHubCollector(object):
         
     for repo in repos:
       self._get_json(repo)
-      self._check_rate()
+      self._check_api_limit()
       self._get_metrics(gauges, metrics)
 
     for metric in metrics:
@@ -37,9 +37,14 @@ class GitHubCollector(object):
     response = requests.get(repo_url)
     self._response_json = json.loads(response.content.decode('UTF-8'))
 
-  def _check_rate(self):
+  def _check_api_limit(self):
     rate_limit_url = "https://api.github.com/rate_limit"
-    R = requests.get(rate_limit_url)
+    if os.getenv('GITHUB_TOKEN'):
+      print("Authentication token supplied")
+      payload = {"access_token":os.environ["GITHUB_TOKEN"],}
+      R = requests.get(rate_limit_url,params=payload)
+    else:
+      R = requests.get(rate_limit_url)
     limit_js = ast.literal_eval(R.text)
     remaining = limit_js["rate"]["remaining"]
     print("Requests remaing this hour", remaining)
