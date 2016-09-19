@@ -37,22 +37,30 @@ github-exporter:
 Metrics will be made available on port 9171 by default
 
 ```
-# HELP github_forks Gauge of forks from the public API
-# TYPE github_forks gauge
-github_forks{repo="docker-hub-exporter",user="infinityworksltd"} 0.0
-github_forks{repo="prometheus-rancher-exporter",user="infinityworksltd"} 9.0
-# HELP github_stars Gauge of stars from the public API
-# TYPE github_stars gauge
-github_stars{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
-github_stars{repo="prometheus-rancher-exporter",user="infinityworksltd"} 6.0
-# HELP github_open_issues Gauge of issues from the public API
-# TYPE github_open_issues gauge
-github_open_issues{repo="docker-hub-exporter",user="infinityworksltd"} 0.0
-github_open_issues{repo="prometheus-rancher-exporter",user="infinityworksltd"} 2.0
-# HELP github_watchers Gauge of watchers from the public API
-# TYPE github_watchers gauge
-github_watchers{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
-github_watchers{repo="prometheus-rancher-exporter",user="infinityworksltd"} 6.0
+# HELP github_repo_subscribers subscribers
+# TYPE github_repo_subscribers gauge
+github_repo_subscribers{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
+github_repo_subscribers{repo="prometheus-rancher-exporter",user="infinityworksltd"} 2.0
+# HELP github_repo_open_issues open_issues
+# TYPE github_repo_open_issues gauge
+github_repo_open_issues{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
+github_repo_open_issues{repo="prometheus-rancher-exporter",user="infinityworksltd"} 2.0
+# HELP github_repo_watchers watchers
+# TYPE github_repo_watchers gauge
+github_repo_watchers{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
+github_repo_watchers{repo="prometheus-rancher-exporter",user="infinityworksltd"} 6.0
+# HELP github_repo_stars stars
+# TYPE github_repo_stars gauge
+github_repo_stars{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
+github_repo_stars{repo="prometheus-rancher-exporter",user="infinityworksltd"} 6.0
+# HELP github_repo_forks forks
+# TYPE github_repo_forks gauge
+github_repo_forks{repo="docker-hub-exporter",user="infinityworksltd"} 0.0
+github_repo_forks{repo="prometheus-rancher-exporter",user="infinityworksltd"} 9.0
+# HELP github_repo_has_issues has_issues
+# TYPE github_repo_has_issues gauge
+github_repo_has_issues{repo="docker-hub-exporter",user="infinityworksltd"} 1.0
+github_repo_has_issues{repo="prometheus-rancher-exporter",user="infinityworksltd"} 1.0
 ```
 
 ## Metadata
