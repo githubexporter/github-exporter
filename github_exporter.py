@@ -70,4 +70,4 @@ if __name__ == '__main__':
   REGISTRY.register(GitHubCollector())
   
   signal.signal(signal.SIGTERM, sigterm_handler)
-  while True: time.sleep(int(2)
+  while True: time.sleep(int(os.getenv('INTERVAL')))
