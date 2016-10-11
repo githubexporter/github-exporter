@@ -5,10 +5,10 @@ Exposes basic metrics for your repositories from the GitHub API, to a Prometheus
 ## Configuration
 
 This exporter is setup to take input from environment variables:
-`BIND_PORT` The port you wish to run the container on, defaults to `9171`
-`GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be quried more often. Optional, but reccomended.
-`ORGS` If supplied, the exporter will enumerate all repositories for that orginisation.
-`REPOS` If supplied, The images you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
+* `BIND_PORT` The port you wish to run the container on, defaults to `9171`
+* `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be quried more often. Optional, but reccomended.
+* `ORGS` If supplied, the exporter will enumerate all repositories for that orginisation.
+* `REPOS` If supplied, The images you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
 
 ## Install and deploy
 

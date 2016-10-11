@@ -6,11 +6,6 @@ import json, requests, sys, time, os, ast, signal
 class GitHubCollector(object):
 
   def collect(self):
-    # Ensure we have something to export
-    if os.getenv('REPOS'):
-      repos = os.getenv('REPOS').replace(' ','').split(",")
-    if os.getenv('ORGS'):
-      orgs = os.getenv('ORGS').replace(' ','').split(",")
 
     metrics = {'forks': 'forks',
                'stars': 'stargazers_count',
@@ -28,15 +23,23 @@ class GitHubCollector(object):
 
     # Check the API rate limit
     self._check_api_limit()
-    print("Rate Limit Check Completed")
 
     # loop through specified repositories and organizations and collect metrics
     if os.getenv('REPOS'):
-      self._assemble_repo_urls(repos)
+      repos = os.getenv('REPOS').replace(' ','').split(",")
+      self._repo_urls = []
+      for repo in repos:
+        print(repo + " added to collection array")
+        self._repo_urls.extend('https://api.github.com/repos/{0}'.format(repo).split(","))
       self._collect_repo_metrics(gauges, metrics)
       print("Metrics collected for individually specified repositories")
+
     if os.getenv('ORGS'):
-      self._assemble_org_urls(orgs)
+      orgs = os.getenv('ORGS').replace(' ','').split(",")
+      self._org_urls = []
+      for org in orgs:
+        print(org + " added to collection array")
+        self._org_urls.extend('https://api.github.com/orgs/{0}/repos'.format(org).split(","))
       self._collect_org_metrics(gauges, metrics)
       print("Metrics collected for repositories listed under specified organization")
 
@@ -44,43 +47,24 @@ class GitHubCollector(object):
     for metric in metrics:
       yield gauges[metric]
 
-  def _assemble_repo_urls(self, repos):
-    self._repo_url_list = []
-    for repo in repos:
-      print(repo + " added to collection array")
-      self._repo_url_list.extend('https://api.github.com/repos/{0}'.format(repo).split(","))
-
-  def _assemble_org_urls(self, orgs):
-    self._org_url_list = []
-    for org in orgs:
-      print(org + " added to collection array")
-      self._org_url_list.extend('https://api.github.com/orgs/{0}/repos'.format(org).split(","))
-
   def _collect_repo_metrics(self, gauges, metrics):
-    for repo in self._repo_url_list:
-      print("Collecting metrics for GitHub repository:  " + repo)
-      response_json = self._get_json(repo)
+    for url in self._repo_urls:
+      response_json = self._get_json(url)
       self._add_metrics(gauges, metrics, response_json)
 
   def _collect_org_metrics(self, gauges, metrics):
-    for org in self._org_url_list:
-      print(org)
-    print(self._org_url_list)
-    for org in self._org_url_list:
-      print("Collecting metrics for GitHub Org:  " + org)
-      response_json = self._get_json(org)
+    for url in self._org_urls:
+      response_json = self._get_json(url)
       for repo in response_json:
         self._add_metrics(gauges, metrics, repo)
 
   def _get_json(self, url):
     print("Getting JSON Payload for " + url)
-    response = requests.get(url)
-    response_json = json.loads(response.content.decode('UTF-8'))
+    response_json = json.loads(requests.get(url).content.decode('UTF-8'))
     return response_json
 
   def _check_api_limit(self):
     rate_limit_url = "https://api.github.com/rate_limit"
-
     if os.getenv('GITHUB_TOKEN'):
       print("Authentication token detected: " + os.getenv('GITHUB_TOKEN'))
       payload = {"access_token":os.environ["GITHUB_TOKEN"]}
@@ -92,8 +76,7 @@ class GitHubCollector(object):
     remaining = limit_js["rate"]["remaining"]
     print("Requests remaing this hour", remaining)
     if not remaining:
-      print("Rate limit exceeded, sleeping for 60 seconds...")
-      time.sleep(60)
+      print("Rate limit exceeded, try enabling authentication")
 
   def _add_metrics(self, gauges, metrics, response_json):
     for metric, field in metrics.items():
@@ -103,6 +86,7 @@ def sigterm_handler(_signo, _stack_frame):
   sys.exit(0)
 
 if __name__ == '__main__':
+  # Ensure we have something to export
   if not (os.getenv('REPOS') or os.getenv('ORGS')):
     print("No repositories or organizations specified, exiting")
     exit(1)
@@ -110,4 +94,4 @@ if __name__ == '__main__':
   REGISTRY.register(GitHubCollector())
   
   signal.signal(signal.SIGTERM, sigterm_handler)
-  while True: time.sleep(int(os.getenv('INTERVAL')))
+  while True: time.sleep(1)
