@@ -14,7 +14,7 @@ class GitHubCollector(object):
                'has_issues': 'has_issues',}
 
     METRIC_PREFIX = 'github_repo'
-    LABELS = ['repo', 'user']
+    LABELS = ['repo', 'user', 'private']
     gauges = {}
 
     # Setup metric counters from prometheus_client.core
@@ -60,7 +60,11 @@ class GitHubCollector(object):
 
   def _get_json(self, url):
     print("Getting JSON Payload for " + url)
-    response_json = json.loads(requests.get(url).content.decode('UTF-8'))
+    if os.getenv('GITHUB_TOKEN'):
+      payload = {"access_token":os.environ["GITHUB_TOKEN"]}
+      response_json = json.loads(requests.get(url,params=payload).content.decode('UTF-8'))
+    else: 
+      response_json = json.loads(requests.get(url).content.decode('UTF-8'))
     return response_json
 
   def _check_api_limit(self):
@@ -80,7 +84,7 @@ class GitHubCollector(object):
 
   def _add_metrics(self, gauges, metrics, response_json):
     for metric, field in metrics.items():
-      gauges[metric].add_metric([response_json['name'], response_json['owner']['login']], value=response_json[field])
+      gauges[metric].add_metric([response_json['name'], response_json['owner']['login'], str(response_json['private']).lower()], value=response_json[field])
 
 def sigterm_handler(_signo, _stack_frame):
   sys.exit(0)
