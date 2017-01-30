@@ -58,14 +58,36 @@ class GitHubCollector(object):
       for repo in response_json:
         self._add_metrics(gauges, metrics, repo)
 
-  def _get_json(self, url):
+  def _get_json(self, url: str):
+    """
+    using github core api
+    rate limit 5000 per hours
+    """
     print("Getting JSON Payload for " + url)
     if os.getenv('GITHUB_TOKEN'):
       payload = {"access_token":os.environ["GITHUB_TOKEN"]}
-      response_json = json.loads(requests.get(url,params=payload).content.decode('UTF-8'))
+      r = requests.get(url,params=payload)
     else: 
-      response_json = json.loads(requests.get(url).content.decode('UTF-8'))
-    return response_json
+      r = requests.get(url)
+    result = json.loads(r.content.decode('UTF-8'))
+    if result is None:
+      raise ValueError("Github API is broken, try again")
+    return self._pagination(r, result)
+
+  def _pagination(self, response: requests.Response, result):
+    if "Link" not in response.headers:
+      return result
+    links = dict()
+    for i in response.headers["Link"].split(","):
+      url, rel = i.split(";")
+      rel = rel[6:-1]
+      url = url[1:-1]
+      links[rel] = url
+      if "next" in links:
+        assert type(result) is list
+        return result + self._get_json(links["next"])
+      else:
+        return result
 
   def _check_api_limit(self):
     rate_limit_url = "https://api.github.com/rate_limit"
@@ -91,6 +113,7 @@ def sigterm_handler(_signo, _stack_frame):
 
 if __name__ == '__main__':
   # Ensure we have something to export
+  print("Starting Exporter")
   if not (os.getenv('REPOS') or os.getenv('ORGS')):
     print("No repositories or organizations specified, exiting")
     exit(1)
