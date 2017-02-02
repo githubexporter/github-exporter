@@ -58,16 +58,25 @@ class GitHubCollector(object):
       for repo in response_json:
         self._add_metrics(gauges, metrics, repo)
 
+  def _get_github_token(self):
+    if os.getenv('GITHUB_TOKEN'):
+      return os.getenv('GITHUB_TOKEN')
+    elif os.getenv('GITHUB_TOKEN_FILE'):
+      return open(os.getenv('GITHUB_TOKEN_FILE'), 'r').read().rstrip()
+    else:
+      return None
+
   def _get_json(self, url: str):
     """
     using github core api
     rate limit 5000 per hours
     """
     print("Getting JSON Payload for " + url)
-    if os.getenv('GITHUB_TOKEN'):
-      payload = {"access_token":os.environ["GITHUB_TOKEN"]}
+    gh_token = self._get_github_token()
+    if gh_token:
+      payload = {"access_token": gh_token}
       r = requests.get(url,params=payload)
-    else: 
+    else:
       r = requests.get(url)
     result = json.loads(r.content.decode('UTF-8'))
     if result is None:
@@ -91,9 +100,10 @@ class GitHubCollector(object):
 
   def _check_api_limit(self):
     rate_limit_url = "https://api.github.com/rate_limit"
-    if os.getenv('GITHUB_TOKEN'):
-      print("Authentication token detected: " + os.getenv('GITHUB_TOKEN'))
-      payload = {"access_token":os.environ["GITHUB_TOKEN"]}
+    gh_token = self._get_github_token()
+    if gh_token:
+      print("Authentication token detected: " + gh_token)
+      payload = {"access_token": gh_token}
       R = requests.get(rate_limit_url,params=payload)
     else:
       R = requests.get(rate_limit_url)
@@ -119,6 +129,6 @@ if __name__ == '__main__':
     exit(1)
   start_http_server(int(os.getenv('BIND_PORT')))
   REGISTRY.register(GitHubCollector())
-  
+
   signal.signal(signal.SIGTERM, sigterm_handler)
   while True: time.sleep(1)
