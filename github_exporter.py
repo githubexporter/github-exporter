@@ -10,7 +10,7 @@ class GitHubCollector(object):
     metrics = {'forks': 'forks',
                'stars': 'stargazers_count',
                'open_issues': 'open_issues',
-               'watchers': 'watchers_count',
+               'watchers': 'subscribers_count', # watchers_count is actually the same as stargazer_count, need subscribers_count
                'has_issues': 'has_issues',}
 
     METRIC_PREFIX = 'github_repo'
