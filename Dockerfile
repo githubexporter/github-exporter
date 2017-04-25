@@ -1,10 +1,24 @@
-FROM python:3.5-alpine
+FROM golang:1.8.0-alpine
+LABEL maintainer "Infinity Works"
 
-RUN pip install prometheus_client requests
+EXPOSE 9173
 
-ENV BIND_PORT 9171
+ENV GOPATH=/go
+    LISTEN_PORT=9173
 
-ADD . /usr/src/app
-WORKDIR /usr/src/app
+RUN addgroup exporter \
+     && adduser -S -G exporter exporter \
+     && apk --update add ca-certificates \
+     && apk --update add --virtual build-deps git
 
-CMD ["python", "github_exporter.py"]
+COPY ./ /go/src/github.com/infinityworksltd/github-exporter
+
+WORKDIR /go/src/github.com/infinityworksltd/github-exporter
+
+RUN go get \
+ && go test ./... \
+ && go build -o /bin/main
+
+USER exporter
+
+CMD [ "/bin/main" ]

@@ -75,7 +75,7 @@ class GitHubCollector(object):
     gh_token = self._get_github_token()
     if gh_token:
       payload = {"access_token": gh_token}
-      r = requests.get(url,params=payload)
+      r = requests. (url,params=payload)
     else:
       r = requests.get(url)
     result = json.loads(r.content.decode('UTF-8'))
