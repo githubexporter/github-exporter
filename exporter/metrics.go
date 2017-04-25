@@ -1,6 +1,7 @@
 package exporter
 
 import "github.com/prometheus/client_golang/prometheus"
+import "strconv"
 
 // AddMetrics - Add's all of the metrics to a map, returns the map.
 func AddMetrics() map[string]*prometheus.Desc {
@@ -10,27 +11,27 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["Stars"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "stars"),
 		"Total number of Stars for given repository",
-		[]string{"repo", "user"}, nil,
+		[]string{"repo", "user", "private"}, nil,
 	)
 	APIMetrics["OpenIssues"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "open_issues"),
 		"Total number of open issues for given repository",
-		[]string{"repo", "user"}, nil,
+		[]string{"repo", "user", "private"}, nil,
 	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
 		"Total number of watchers/subscribers for given repository",
-		[]string{"repo", "user"}, nil,
+		[]string{"repo", "user", "private"}, nil,
 	)
 	APIMetrics["Forks"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "forks"),
 		"Total number of forks for given repository",
-		[]string{"repo", "user"}, nil,
+		[]string{"repo", "user", "private"}, nil,
 	)
 	APIMetrics["Size"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "size_kb"),
 		"Size in KB for given repository",
-		[]string{"repo", "user"}, nil,
+		[]string{"repo", "user", "private"}, nil,
 	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
@@ -57,11 +58,11 @@ func (e *Exporter) processMetrics(data []*APIResponse, rates *RateLimits, ch cha
 	// APIMetrics - range through the data object
 	for _, y := range data {
 		for _, x := range *y {
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Stars"], prometheus.GaugeValue, x.Stars, x.Name, x.Owner.Login)
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Forks"], prometheus.GaugeValue, x.Forks, x.Name, x.Owner.Login)
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssues, x.Name, x.Owner.Login)
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, x.Watchers, x.Name, x.Owner.Login)
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner.Login)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Stars"], prometheus.GaugeValue, x.Stars, x.Name, x.Owner.Login, strconv.FormatBool(x.Private))
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Forks"], prometheus.GaugeValue, x.Forks, x.Name, x.Owner.Login, strconv.FormatBool(x.Private))
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssues, x.Name, x.Owner.Login, strconv.FormatBool(x.Private))
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, x.Watchers, x.Name, x.Owner.Login, strconv.FormatBool(x.Private))
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner.Login, strconv.FormatBool(x.Private))
 		}
 	}
 

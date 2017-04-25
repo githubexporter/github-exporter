@@ -38,7 +38,10 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 
 		apid = append(apid, d)
 
-		log.Infof("API data fetched for repository: ", u)
+		// Close the response body, the underlying Transport should then close the connection.
+		resp.Body.Close()
+
+		log.Infof("API data fetched for repository: %s", u)
 	}
 
 	rates, err := e.getRates(e.APIURL)
@@ -50,14 +53,11 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 	return apid, rates, err
 }
 
-// getJSON return json from server, return the formatted JSON
+// toJSON decodes the response to formatted JSON
 func (e *Exporter) toJSON(resp *http.Response, target interface{}) {
 
 	//respFormatted := json.NewDecoder(resp.Body).Decode(target)
 	json.NewDecoder(resp.Body).Decode(target)
-
-	// Close the response body, the underlying Transport should then close the connection.
-	resp.Body.Close()
 
 	return
 }

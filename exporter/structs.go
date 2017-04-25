@@ -19,6 +19,7 @@ type APIResponse []struct {
 	Owner struct {
 		Login string `json:"login"`
 	} `json:"owner"`
+	Private    bool    `json:"private"`
 	Forks      float64 `json:"forks"`
 	Stars      float64 `json:"stargazers_count"`
 	OpenIssues float64 `json:"open_issues"`
