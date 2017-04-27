@@ -19,8 +19,9 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 
 	for _, u := range e.TargetURLs {
 
-		// Create new data slice from Struct
+		// Create new data slice from Struct for organisation data
 		var d = new(APIResponse)
+		var da = []*APIResponse{}
 
 		resp, err := e.getHttpResponse(u)
 
@@ -28,15 +29,30 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 			log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", u, err)
 			return nil, nil, err
 		}
+		body, err := ioutil.ReadAll(resp.Body)
+		ia := isArray(body)
 
-		e.toJSON(resp, &d)
+		if err != nil {
+			log.Errorf("Failed to determine API response")
+			return nil, nil, err
+		}
+
+		if ia {
+			log.Info("ARRAY!")
+			json.Unmarshal(body, &da)
+			apid = append(apid, da...)
+
+		} else if !ia {
+			log.Info("NOT ARRAY!")
+			apid = append(apid, d)
+			json.Unmarshal(body, &d)
+
+		}
 
 		if err != nil {
 			log.Errorf("Error gathering JSON data for repository: %s. Got Error: %s", u, err)
 			return nil, nil, err
 		}
-
-		apid = append(apid, d)
 
 		// Close the response body, the underlying Transport should then close the connection.
 		resp.Body.Close()
@@ -53,15 +69,7 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 	return apid, rates, err
 }
 
-// toJSON decodes the response to formatted JSON
-func (e *Exporter) toJSON(resp *http.Response, target interface{}) {
-
-	//respFormatted := json.NewDecoder(resp.Body).Decode(target)
-	json.NewDecoder(resp.Body).Decode(target)
-
-	return
-}
-
+// getAuth returns oauth2 token as string for usage in http.request
 func (e *Exporter) getAuth() (string, error) {
 
 	if e.APIToken != "" {
@@ -143,4 +151,20 @@ func (e *Exporter) getHttpResponse(url string) (*http.Response, error) {
 	}
 
 	return resp, nil
+}
+
+func isArray(body []byte) bool {
+
+	isArray := false
+
+	for _, c := range body {
+		if c == ' ' || c == '\t' || c == '\r' || c == '\n' {
+			continue
+		}
+		isArray = c == '['
+		break
+	}
+
+	return isArray
+
 }

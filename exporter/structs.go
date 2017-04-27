@@ -14,7 +14,10 @@ type Exporter struct {
 }
 
 // APIResponse is used to store data from all the relevant endpoints in the API
-type APIResponse []struct {
+type APIResponseArray []APIResponse
+
+// APIResponse is used to store data from all the relevant endpoints in the API
+type APIResponse struct {
 	Name  string `json:"name"`
 	Owner struct {
 		Login string `json:"login"`
