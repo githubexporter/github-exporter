@@ -31,7 +31,6 @@ func Init() Config {
 
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
-		panic("Failed to find any valid configuration. Please refer to README.md")
 	}
 
 	appConfig := Config{
