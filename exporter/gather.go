@@ -15,47 +15,34 @@ import (
 // gatherData - Collects the data from thw API, invokes functions to transform that data into metrics
 func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *RateLimits, error) {
 
-	apid := []*APIResponse{}
+	APId := []*APIResponse{}
 
 	for _, u := range e.TargetURLs {
-
-		// Create new data slice from Struct for organisation data
-		var d = new(APIResponse)
-		var da = []*APIResponse{}
-
 		resp, err := e.getHttpResponse(u)
 
 		if err != nil {
 			log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", u, err)
 			return nil, nil, err
 		}
+
+		// Read the body into a string so we can parse it twice (isArray & Unmarshal)
 		body, err := ioutil.ReadAll(resp.Body)
-		ia := isArray(body)
-
-		if err != nil {
-			log.Errorf("Failed to determine API response")
-			return nil, nil, err
-		}
-
-		if ia {
-			log.Info("ARRAY!")
-			json.Unmarshal(body, &da)
-			apid = append(apid, da...)
-
-		} else if !ia {
-			log.Info("NOT ARRAY!")
-			apid = append(apid, d)
-			json.Unmarshal(body, &d)
-
-		}
-
-		if err != nil {
-			log.Errorf("Error gathering JSON data for repository: %s. Got Error: %s", u, err)
-			return nil, nil, err
-		}
-
-		// Close the response body, the underlying Transport should then close the connection.
 		resp.Body.Close()
+
+		if err != nil {
+			log.Errorf("Failed to read response body, error: %s", err)
+			return nil, nil, err
+		}
+
+		if isArray(body) {
+			dataSlice := []*APIResponse{}
+			json.Unmarshal(body, &dataSlice)
+			APId = append(APId, dataSlice...)
+		} else {
+			data := new(APIResponse)
+			json.Unmarshal(body, &data)
+			APId = append(APId, data)
+		}
 
 		log.Infof("API data fetched for repository: %s", u)
 	}
@@ -63,10 +50,10 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 	rates, err := e.getRates(e.APIURL)
 
 	if err != nil {
-		return apid, rates, err
+		return APId, rates, err
 	}
 
-	return apid, rates, err
+	return APId, rates, err
 }
 
 // getAuth returns oauth2 token as string for usage in http.request
