@@ -5,18 +5,20 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Describe describes all the metrics ever exported by the Exporter
+// Describe - loops through the API metrics and passes them to prometheus.Describe
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 
-	for _, met := range e.APIMetrics {
-		ch <- met
+	for _, m := range e.APIMetrics {
+		ch <- m
 	}
 
 }
 
 // Collect function, called on by Prometheus Client library
+// This function is called when a scrape is peformed on the /metrics page
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
+	// Scrape the Data from Github
 	var data, rates, err = e.gatherData(ch)
 
 	if err != nil {
@@ -24,6 +26,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Set prometheus gauge metrics using the data gathered
 	err = e.processMetrics(data, rates, ch)
 
 	if err != nil {

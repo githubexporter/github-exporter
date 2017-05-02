@@ -13,7 +13,8 @@ type Exporter struct {
 	config.Config
 }
 
-// APIResponse is used to store data from all the relevant endpoints in the API
+// APIResponseArray is used to store an array of APIResponses.
+// This is useful for the JSON array detection
 type APIResponseArray []APIResponse
 
 // APIResponse is used to store data from all the relevant endpoints in the API
@@ -30,6 +31,8 @@ type APIResponse struct {
 	Size       float64 `json:"size"`
 }
 
+// RateLimits is used to store rate limit data into a struct
+// This data is later represented as a metric, captured at the end of a scrape
 type RateLimits struct {
 	Limit     float64
 	Remaining float64

@@ -12,13 +12,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// gatherData - Collects the data from thw API, invokes functions to transform that data into metrics
+// gatherData - Collects the data from the API and stores into struct
 func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *RateLimits, error) {
 
-	APId := []*APIResponse{}
+	aResponses := []*APIResponse{}
 
+	// Scrapes are peformed per URL and data is appended to a slice
 	for _, u := range e.TargetURLs {
-		resp, err := e.getHttpResponse(u)
+		resp, err := e.getHTTPResponse(u)
 
 		if err != nil {
 			log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", u, err)
@@ -34,26 +35,29 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 			return nil, nil, err
 		}
 
+		// Github can at times present an array, or an object for the same data set.
+		// This code checks handles this variation.
 		if isArray(body) {
 			dataSlice := []*APIResponse{}
 			json.Unmarshal(body, &dataSlice)
-			APId = append(APId, dataSlice...)
+			aResponses = append(aResponses, dataSlice...)
 		} else {
 			data := new(APIResponse)
 			json.Unmarshal(body, &data)
-			APId = append(APId, data)
+			aResponses = append(aResponses, data)
 		}
 
 		log.Infof("API data fetched for repository: %s", u)
 	}
 
+	// Check the API rate data and store as a metric
 	rates, err := e.getRates(e.APIURL)
 
 	if err != nil {
-		return APId, rates, err
+		return aResponses, rates, err
 	}
 
-	return APId, rates, err
+	return aResponses, rates, err
 }
 
 // getAuth returns oauth2 token as string for usage in http.request
@@ -73,12 +77,14 @@ func (e *Exporter) getAuth() (string, error) {
 	return "", nil
 }
 
+// getRates obtains the rate limit data for requests against the github API.
+// Especially useful when operating without oauth and the subsequent lower cap.
 func (e *Exporter) getRates(baseURL string) (*RateLimits, error) {
 
 	rateEndPoint := ("/rate_limit")
 	url := fmt.Sprintf("%s%s", baseURL, rateEndPoint)
 
-	resp, err := e.getHttpResponse(url)
+	resp, err := e.getHTTPResponse(url)
 
 	if err != nil {
 		log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", url, err)
@@ -111,22 +117,26 @@ func (e *Exporter) getRates(baseURL string) (*RateLimits, error) {
 
 }
 
-func (e *Exporter) getHttpResponse(url string) (*http.Response, error) {
+// getHTTPResponse creates a http client, issues a GET and returns the http.Response
+func (e *Exporter) getHTTPResponse(url string) (*http.Response, error) {
 
 	client := &http.Client{}
 
+	// (expensive but robus at these volumes)
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
+	// Obtain auth token from file or environment
 	a, err := e.getAuth()
 
 	if err != nil {
 		return nil, err
 	}
 
+	// If a token is present, add it to the http.request
 	if a != "" {
 		req.Header.Add("Authorization", "token "+a)
 	}
@@ -140,6 +150,7 @@ func (e *Exporter) getHttpResponse(url string) (*http.Response, error) {
 	return resp, nil
 }
 
+// isArray simply looks for key details that determine if the JSON response is an array or not.
 func isArray(body []byte) bool {
 
 	isArray := false
