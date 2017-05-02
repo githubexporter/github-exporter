@@ -4,7 +4,7 @@ LABEL maintainer "Infinity Works"
 EXPOSE 9173
 
 ENV GOPATH=/go
-    LISTEN_PORT=9173
+ENV LISTEN_PORT=9173
 
 RUN addgroup exporter \
      && adduser -S -G exporter exporter \
