@@ -1,10 +1,10 @@
 FROM golang:1.8.0-alpine
 LABEL maintainer "Infinity Works"
 
-EXPOSE 9173
+EXPOSE 9171
 
 ENV GOPATH=/go
-ENV LISTEN_PORT=9173
+ENV LISTEN_PORT=9171
 
 RUN addgroup exporter \
      && adduser -S -G exporter exporter \

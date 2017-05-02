@@ -33,12 +33,6 @@ func Init() Config {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
 	}
 
-	// I believe I can fly,
-	// I believe I can touch the sky,
-	// I think about it every night and day,
-	// Think about it every night and day,
-	// Spread my wings and fly awayyyy
-
 	appConfig := Config{
 		&ac,
 		cfg.GetEnv("API_URL", "https://api.github.com"),
