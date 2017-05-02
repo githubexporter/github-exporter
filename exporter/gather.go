@@ -19,6 +19,7 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *Rat
 
 	// Scrapes are peformed per URL and data is appended to a slice
 	for _, u := range e.TargetURLs {
+
 		resp, err := e.getHTTPResponse(u)
 
 		if err != nil {
@@ -145,6 +146,11 @@ func (e *Exporter) getHTTPResponse(url string) (*http.Response, error) {
 
 	if err != nil {
 		return resp, err
+	}
+
+	// Triggers if a user specifies an invalid or not visible repository
+	if resp.StatusCode == 404 {
+		return resp, fmt.Errorf("404 Recieved from GitHub API from URL %s", url)
 	}
 
 	return resp, nil
