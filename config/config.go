@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -17,8 +18,9 @@ type Config struct {
 	APIURL        string
 	Repositories  string
 	Organisations string
-	APIToken      string
+	APITokenEnv   string
 	APITokenFile  string
+	APIToken      string
 	TargetURLs    []string
 }
 
@@ -26,8 +28,13 @@ type Config struct {
 func Init() Config {
 
 	ac := cfg.Init()
-
-	scraped, err := getScrapeURLs()
+	url := cfg.GetEnv("API_URL", "https://api.github.com")
+	repos := os.Getenv("REPOS")
+	orgs := os.Getenv("ORGS")
+	tokenEnv := os.Getenv("GITHUB_TOKEN")
+	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
+	token, err := getAuth(tokenEnv, tokenFile)
+	scraped, err := getScrapeURLs(url, repos, orgs)
 
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
@@ -35,11 +42,12 @@ func Init() Config {
 
 	appConfig := Config{
 		&ac,
-		cfg.GetEnv("API_URL", "https://api.github.com"),
-		os.Getenv("REPOS"),
-		os.Getenv("ORGS"),
-		os.Getenv("GITHUB_TOKEN"),
-		os.Getenv("GITHUB_TOKEN_FILE"),
+		url,
+		repos,
+		orgs,
+		tokenEnv,
+		tokenFile,
+		token,
 		scraped,
 	}
 
@@ -48,12 +56,10 @@ func Init() Config {
 
 // Init populates the Config struct based on environmental runtime configuration
 // All URL's are added to the TargetURL's string array
-func getScrapeURLs() ([]string, error) {
+func getScrapeURLs(apiURL string, repos string, orgs string) ([]string, error) {
 
 	urls := []string{}
-	apiURL := cfg.GetEnv("API_URL", "https://api.github.com")
-	repos := os.Getenv("REPOS")
-	orgs := os.Getenv("ORGS")
+
 	opts := "?&per_page=100" // Used to set the Github API to return 100 results per page (max)
 
 	// User input validation, check that either repositories or organisations have been passed in
@@ -80,4 +86,21 @@ func getScrapeURLs() ([]string, error) {
 	}
 
 	return urls, nil
+}
+
+// getAuth returns oauth2 token as string for usage in http.request
+func getAuth(token string, tokenFile string) (string, error) {
+
+	if token != "" {
+		return token, nil
+	} else if tokenFile != "" {
+		b, err := ioutil.ReadFile(tokenFile)
+		if err != nil {
+			return "", err
+		}
+		return string(b), err
+
+	}
+
+	return "", nil
 }

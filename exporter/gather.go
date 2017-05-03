@@ -3,7 +3,6 @@ package exporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
@@ -14,10 +13,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 
 	data := []*Datum{}
 
-	// Obtain auth token from file or environment
-	token, err := getAuth(e.APIToken, e.APITokenFile)
-
-	responses, err := asyncHTTPGets(e.TargetURLs, token)
+	responses, err := asyncHTTPGets(e.TargetURLs, e.APIToken)
 
 	if err != nil {
 		return data, nil, err
@@ -41,7 +37,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 	}
 
 	// Check the API rate data and store as a metric
-	rates, err := getRates(e.APIURL, token)
+	rates, err := getRates(e.APIURL, e.APIToken)
 
 	if err != nil {
 		return data, rates, err
@@ -50,23 +46,6 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 	//return data, rates, err
 	return data, rates, nil
 
-}
-
-// getAuth returns oauth2 token as string for usage in http.request
-func getAuth(token string, tokenFile string) (string, error) {
-
-	if token != "" {
-		return token, nil
-	} else if tokenFile != "" {
-		b, err := ioutil.ReadFile(tokenFile)
-		if err != nil {
-			return "", err
-		}
-		return string(b), err
-
-	}
-
-	return "", nil
 }
 
 // getRates obtains the rate limit data for requests against the github API.
