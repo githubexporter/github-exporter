@@ -13,7 +13,11 @@ import (
 func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 
 	data := []*Datum{}
-	responses, err := e.asyncHTTPGets()
+
+	// Obtain auth token from file or environment
+	token, err := getAuth(e.APIToken, e.APITokenFile)
+
+	responses, err := asyncHTTPGets(e.TargetURLs, token)
 
 	if err != nil {
 		return data, nil, err
@@ -29,7 +33,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 			data = append(data, ds...)
 		} else {
 			d := new(Datum)
-			json.Unmarshal(response.body, &data)
+			json.Unmarshal(response.body, &d)
 			data = append(data, d)
 		}
 
@@ -37,7 +41,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 	}
 
 	// Check the API rate data and store as a metric
-	rates, err := e.getRates(e.APIURL)
+	rates, err := getRates(e.APIURL, token)
 
 	if err != nil {
 		return data, rates, err
@@ -67,12 +71,12 @@ func getAuth(token string, tokenFile string) (string, error) {
 
 // getRates obtains the rate limit data for requests against the github API.
 // Especially useful when operating without oauth and the subsequent lower cap.
-func (e *Exporter) getRates(baseURL string) (*RateLimits, error) {
+func getRates(baseURL string, token string) (*RateLimits, error) {
 
 	rateEndPoint := ("/rate_limit")
 	url := fmt.Sprintf("%s%s", baseURL, rateEndPoint)
 
-	resp, err := getHTTPResponse(url, e.APIToken, e.APITokenFile)
+	resp, err := getHTTPResponse(url, token)
 
 	defer resp.Body.Close()
 

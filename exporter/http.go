@@ -9,17 +9,17 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-func (e *Exporter) asyncHTTPGets() ([]*Response, error) {
+func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 
 	// Channels used to enable concurrent requests
-	ch := make(chan *Response, len(e.TargetURLs))
+	ch := make(chan *Response, len(targets))
 
 	responses := []*Response{}
 
-	for _, url := range e.TargetURLs {
+	for _, url := range targets {
 
 		go func(url string) {
-			err := e.getResponse(url, ch)
+			err := getResponse(url, token, ch)
 			if err != nil {
 				ch <- &Response{url, nil, []byte{}, err}
 			}
@@ -36,7 +36,7 @@ func (e *Exporter) asyncHTTPGets() ([]*Response, error) {
 			}
 			responses = append(responses, r)
 
-			if len(responses) == len(e.TargetURLs) {
+			if len(responses) == len(targets) {
 				return responses, nil
 			}
 		}
@@ -45,11 +45,11 @@ func (e *Exporter) asyncHTTPGets() ([]*Response, error) {
 }
 
 // getResponse collects an individual http.response and returns a *Response
-func (e *Exporter) getResponse(url string, ch chan<- *Response) error {
+func getResponse(url string, token string, ch chan<- *Response) error {
 
 	log.Infof("Fetching %s \n", url)
 
-	resp, err := getHTTPResponse(url, e.APIToken, e.APITokenFile)
+	resp, err := getHTTPResponse(url, token) // do this earlier
 
 	if err != nil {
 		return fmt.Errorf("Error converting body to byte array: %v", err)
@@ -75,7 +75,7 @@ func (e *Exporter) getResponse(url string, ch chan<- *Response) error {
 }
 
 // getHTTPResponse handles the http client creation, token setting and returns the *http.response
-func getHTTPResponse(url string, token string, tokenFile string) (*http.Response, error) {
+func getHTTPResponse(url string, token string) (*http.Response, error) {
 
 	client := &http.Client{
 		Timeout: time.Second * 10,
@@ -87,15 +87,16 @@ func getHTTPResponse(url string, token string, tokenFile string) (*http.Response
 		return nil, err
 	}
 
-	// Obtain auth token from file or environment
-	a, err := getAuth(token, tokenFile)
-
 	// If a token is present, add it to the http.request
-	if a != "" {
-		req.Header.Add("Authorization", "token "+a)
+	if token != "" {
+		req.Header.Add("Authorization", "token "+token)
 	}
 
 	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return resp, err
 }
