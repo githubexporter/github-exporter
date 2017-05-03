@@ -4,70 +4,57 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // gatherData - Collects the data from the API and stores into struct
-func (e *Exporter) gatherData(ch chan<- prometheus.Metric) ([]*APIResponse, *RateLimits, error) {
+func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 
-	aResponses := []*APIResponse{}
+	data := []*Datum{}
+	responses, err := e.asyncHTTPGets()
 
-	// Scrapes are peformed per URL and data is appended to a slice
-	for _, u := range e.TargetURLs {
+	if err != nil {
+		return data, nil, err
+	}
 
-		resp, err := e.getHTTPResponse(u)
-
-		if err != nil {
-			log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", u, err)
-			return nil, nil, err
-		}
-
-		// Read the body into a string so we can parse it twice (isArray & Unmarshal)
-		body, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-
-		if err != nil {
-			log.Errorf("Failed to read response body, error: %s", err)
-			return nil, nil, err
-		}
+	for _, response := range responses {
 
 		// Github can at times present an array, or an object for the same data set.
 		// This code checks handles this variation.
-		if isArray(body) {
-			dataSlice := []*APIResponse{}
-			json.Unmarshal(body, &dataSlice)
-			aResponses = append(aResponses, dataSlice...)
+		if isArray(response.body) {
+			ds := []*Datum{}
+			json.Unmarshal(response.body, &ds)
+			data = append(data, ds...)
 		} else {
-			data := new(APIResponse)
-			json.Unmarshal(body, &data)
-			aResponses = append(aResponses, data)
+			d := new(Datum)
+			json.Unmarshal(response.body, &data)
+			data = append(data, d)
 		}
 
-		log.Infof("API data fetched for repository: %s", u)
+		log.Infof("API data fetched for repository: %s", response.url)
 	}
 
 	// Check the API rate data and store as a metric
 	rates, err := e.getRates(e.APIURL)
 
 	if err != nil {
-		return aResponses, rates, err
+		return data, rates, err
 	}
 
-	return aResponses, rates, err
+	//return data, rates, err
+	return data, rates, nil
+
 }
 
 // getAuth returns oauth2 token as string for usage in http.request
-func (e *Exporter) getAuth() (string, error) {
+func getAuth(token string, tokenFile string) (string, error) {
 
-	if e.APIToken != "" {
-		return e.APIToken, nil
-	} else if e.APITokenFile != "" {
-		b, err := ioutil.ReadFile(e.APITokenFile)
+	if token != "" {
+		return token, nil
+	} else if tokenFile != "" {
+		b, err := ioutil.ReadFile(tokenFile)
 		if err != nil {
 			return "", err
 		}
@@ -85,7 +72,9 @@ func (e *Exporter) getRates(baseURL string) (*RateLimits, error) {
 	rateEndPoint := ("/rate_limit")
 	url := fmt.Sprintf("%s%s", baseURL, rateEndPoint)
 
-	resp, err := e.getHTTPResponse(url)
+	resp, err := getHTTPResponse(url, e.APIToken, e.APITokenFile)
+
+	defer resp.Body.Close()
 
 	if err != nil {
 		log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", url, err)
@@ -116,44 +105,6 @@ func (e *Exporter) getRates(baseURL string) (*RateLimits, error) {
 		Reset:     reset,
 	}, err
 
-}
-
-// getHTTPResponse creates a http client, issues a GET and returns the http.Response
-func (e *Exporter) getHTTPResponse(url string) (*http.Response, error) {
-
-	client := &http.Client{}
-
-	// (expensive but robus at these volumes)
-	req, err := http.NewRequest("GET", url, nil)
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Obtain auth token from file or environment
-	a, err := e.getAuth()
-
-	if err != nil {
-		return nil, err
-	}
-
-	// If a token is present, add it to the http.request
-	if a != "" {
-		req.Header.Add("Authorization", "token "+a)
-	}
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return resp, err
-	}
-
-	// Triggers if a user specifies an invalid or not visible repository
-	if resp.StatusCode == 404 {
-		return resp, fmt.Errorf("404 Recieved from GitHub API from URL %s", url)
-	}
-
-	return resp, nil
 }
 
 // isArray simply looks for key details that determine if the JSON response is an array or not.

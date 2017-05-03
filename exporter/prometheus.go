@@ -19,7 +19,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	// Scrape the Data from Github
-	var data, rates, err = e.gatherData(ch)
+	var data, rates, err = e.gatherData()
 
 	if err != nil {
 		log.Errorf("Error gathering Data from remote API: %v", err)

@@ -53,7 +53,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 }
 
 // processMetrics - processes the response data and sets the metrics using it as a source
-func (e *Exporter) processMetrics(data []*APIResponse, rates *RateLimits, ch chan<- prometheus.Metric) error {
+func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- prometheus.Metric) error {
 
 	// APIMetrics - range through the data slice
 	for _, x := range data {

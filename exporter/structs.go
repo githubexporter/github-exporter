@@ -1,6 +1,8 @@
 package exporter
 
 import (
+	"net/http"
+
 	"github.com/infinityworksltd/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -13,12 +15,12 @@ type Exporter struct {
 	config.Config
 }
 
-// APIResponseArray is used to store an array of APIResponses.
+// Data is used to store an array of Datums.
 // This is useful for the JSON array detection
-type APIResponseArray []APIResponse
+type Data []Datum
 
-// APIResponse is used to store data from all the relevant endpoints in the API
-type APIResponse struct {
+// Datum is used to store data from all the relevant endpoints in the API
+type Datum struct {
 	Name  string `json:"name"`
 	Owner struct {
 		Login string `json:"login"`
@@ -37,4 +39,12 @@ type RateLimits struct {
 	Limit     float64
 	Remaining float64
 	Reset     float64
+}
+
+// Response struct is used to store http.Response and associated data
+type Response struct {
+	url      string
+	response *http.Response
+	body     []byte
+	err      error
 }
