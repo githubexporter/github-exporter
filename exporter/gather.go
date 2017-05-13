@@ -40,7 +40,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 	rates, err := getRates(e.APIURL, e.APIToken)
 
 	if err != nil {
-		return data, rates, err
+		log.Errorf("Unable to obtain rate limit data from API, Error: %s", err)
 	}
 
 	//return data, rates, err
@@ -60,8 +60,12 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Errorf("Error requesting http data from API for repository: %s. Got Error: %s", url, err)
 		return &RateLimits{}, err
+	}
+
+	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
+	if resp.StatusCode == 404 {
+		return &RateLimits{}, fmt.Errorf("Rate Limiting not enabled in GitHub API")
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
