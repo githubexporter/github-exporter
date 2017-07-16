@@ -5,9 +5,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/fatih/structs"
-	conf "github.com/infinityworksltd/github-exporter/config"
-	"github.com/infinityworksltd/github-exporter/exporter"
-	"github.com/infinityworksltd/go-common/logger"
+	conf "github.com/infinityworks/github-exporter/config"
+	"github.com/infinityworks/github-exporter/exporter"
+	"github.com/infinityworks/go-common/logger"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -43,7 +43,7 @@ func main() {
 		                <head><title>Github Exporter</title></head>
 		                <body>
 		                   <h1>GitHub Prometheus Metrics Exporter</h1>
-						   <p>For more information, visit <a href=https://github.com/infinityworksltd/github-exporter>GitHub</a></p>
+						   <p>For more information, visit <a href=https://github.com/infinityworks/github-exporter>GitHub</a></p>
 		                   <p><a href='` + applicationCfg.MetricsPath() + `'>Metrics</a></p>
 		                   </body>
 		                </html>

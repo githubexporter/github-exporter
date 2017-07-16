@@ -3,8 +3,10 @@ LABEL maintainer "Infinity Works"
 
 RUN apk --update add ca-certificates \
      && apk --update add --virtual build-deps git
-COPY ./ /go/src/github.com/infinityworksltd/github-exporter
-WORKDIR /go/src/github.com/infinityworksltd/github-exporter
+
+COPY ./ /go/src/github.com/infinityworks/github-exporter
+WORKDIR /go/src/github.com/infinityworks/github-exporter
+
 RUN go get \
  && go test ./... \
  && go build -o /bin/main

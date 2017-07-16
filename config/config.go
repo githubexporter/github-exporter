@@ -9,7 +9,7 @@ import (
 
 	"os"
 
-	cfg "github.com/infinityworksltd/go-common/config"
+	cfg "github.com/infinityworks/go-common/config"
 )
 
 // Config struct holds all of the runtime confgiguration for the application
