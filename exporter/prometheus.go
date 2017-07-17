@@ -1,8 +1,8 @@
 package exporter
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 // Describe - loops through the API metrics and passes them to prometheus.Describe

@@ -3,12 +3,12 @@ package main
 import (
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/fatih/structs"
 	conf "github.com/infinityworks/github-exporter/config"
 	"github.com/infinityworks/github-exporter/exporter"
 	"github.com/infinityworks/go-common/logger"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 var (
