@@ -40,8 +40,14 @@ github-exporter:
     tty: true
     stdin_open: true
     expose:
+      - 9171
+    ports:
       - 9171:9171
     image: infinityworks/github-exporter:latest
+    environment:
+      - REPOS=<REPOS you want to monitor>
+      - GITHUB_TOKEN=<your github api token>
+    
 ```
 
 ## Metrics
