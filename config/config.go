@@ -18,6 +18,7 @@ type Config struct {
 	APIURL        string
 	Repositories  string
 	Organisations string
+	Users         string
 	APITokenEnv   string
 	APITokenFile  string
 	APIToken      string
@@ -31,10 +32,11 @@ func Init() Config {
 	url := cfg.GetEnv("API_URL", "https://api.github.com")
 	repos := os.Getenv("REPOS")
 	orgs := os.Getenv("ORGS")
+	users := os.Getenv("USERS")
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	token, err := getAuth(tokenEnv, tokenFile)
-	scraped, err := getScrapeURLs(url, repos, orgs)
+	scraped, err := getScrapeURLs(url, repos, orgs, users)
 
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
@@ -45,6 +47,7 @@ func Init() Config {
 		url,
 		repos,
 		orgs,
+		users,
 		tokenEnv,
 		tokenFile,
 		token,
@@ -56,15 +59,15 @@ func Init() Config {
 
 // Init populates the Config struct based on environmental runtime configuration
 // All URL's are added to the TargetURL's string array
-func getScrapeURLs(apiURL string, repos string, orgs string) ([]string, error) {
+func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 
 	urls := []string{}
 
 	opts := "?&per_page=100" // Used to set the Github API to return 100 results per page (max)
 
 	// User input validation, check that either repositories or organisations have been passed in
-	if len(repos) == 0 && len(orgs) == 0 {
-		return urls, fmt.Errorf("No organisations or repositories specified")
+	if len(repos) == 0 && len(orgs) == 0 && len(users) == 0 {
+		return urls, fmt.Errorf("No targets specified")
 	}
 
 	// Append repositories to the array
@@ -81,6 +84,14 @@ func getScrapeURLs(apiURL string, repos string, orgs string) ([]string, error) {
 		o := strings.Split(orgs, ", ")
 		for _, x := range o {
 			y := fmt.Sprintf("%s/orgs/%s/repos%s", apiURL, x, opts)
+			urls = append(urls, y)
+		}
+	}
+
+	if users != "" {
+		us := strings.Split(users, ", ")
+		for _, x := range us {
+			y := fmt.Sprintf("%s/users/%s/repos%s", apiURL, x, opts)
 			urls = append(urls, y)
 		}
 	}
