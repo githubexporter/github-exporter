@@ -7,9 +7,12 @@ Exposes basic metrics for your repositories from the GitHub API, to a Prometheus
 This exporter is setup to take input from environment variables:
 
 ### Required
-* `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2". Can be ommited if using `REPOS` and not required
-* `REPOS` If supplied, The images you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs. Can be ommited if using `ORGS` and not required
+* `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2".
+* `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
+* `USERS` If supplied, the exporter will enumerate all repositories for that users. Expected in
+the format "user1, user2".
 
+At least one of those 3 options should be provided.
 
 ### Optional
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
@@ -47,7 +50,7 @@ github-exporter:
     environment:
       - REPOS=<REPOS you want to monitor>
       - GITHUB_TOKEN=<your github api token>
-    
+
 ```
 
 ## Metrics
