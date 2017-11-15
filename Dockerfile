@@ -1,8 +1,8 @@
-FROM golang:1.8.0-alpine as build
+FROM golang:1.9-alpine as build
 LABEL maintainer "Infinity Works"
 
-RUN apk --update add ca-certificates \
-     && apk --update add --virtual build-deps git
+RUN apk --no-cache add ca-certificates \
+     && apk --no-cache add --virtual build-deps git
 
 COPY ./ /go/src/github.com/infinityworks/github-exporter
 WORKDIR /go/src/github.com/infinityworks/github-exporter
@@ -13,7 +13,7 @@ RUN go get \
 
 FROM alpine:3.6
 
-RUN apk --update add ca-certificates \
+RUN apk --no-cache add ca-certificates \
      && addgroup exporter \
      && adduser -S -G exporter exporter
 USER exporter
