@@ -109,7 +109,7 @@ func getAuth(token string, tokenFile string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return string(b), err
+		return strings.TrimLeft(string(b)), err
 
 	}
 
