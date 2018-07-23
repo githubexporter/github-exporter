@@ -11,27 +11,27 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["Stars"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "stars"),
 		"Total number of Stars for given repository",
-		[]string{"repo", "user", "private", "fork", "arhived", "license", "language"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["OpenIssues"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "open_issues"),
 		"Total number of open issues for given repository",
-		[]string{"repo", "user", "private", "fork", "arhived", "license", "language"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
 		"Total number of watchers/subscribers for given repository",
-		[]string{"repo", "user", "private", "fork", "arhived", "license", "language"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["Forks"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "forks"),
 		"Total number of forks for given repository",
-		[]string{"repo", "user", "private", "fork", "arhived", "license", "language"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["Size"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "size_kb"),
 		"Size in KB for given repository",
-		[]string{"repo", "user", "private", "fork", "arhived", "license", "language"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
