@@ -14,19 +14,19 @@ github_rate_remaining 2801
 github_rate_reset 1.527709029e+09
 # HELP github_repo_forks Total number of forks for given repository
 # TYPE github_repo_forks gauge
-github_repo_forks{arhived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 19
+github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 19
 # HELP github_repo_open_issues Total number of open issues for given repository
 # TYPE github_repo_open_issues gauge
-github_repo_open_issues{arhived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 7
+github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 7
 # HELP github_repo_size_kb Size in KB for given repository
 # TYPE github_repo_size_kb gauge
-github_repo_size_kb{arhived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 41
+github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 41
 # HELP github_repo_stars Total number of Stars for given repository
 # TYPE github_repo_stars gauge
-github_repo_stars{arhived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 64
+github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 64
 # HELP github_repo_watchers Total number of watchers/subscribers for given repository
 # TYPE github_repo_watchers gauge
-github_repo_watchers{arhived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 10
+github_repo_watchers{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 10
 ```
 
 <!--
