@@ -56,12 +56,10 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 	url := fmt.Sprintf("%s%s", baseURL, rateEndPoint)
 
 	resp, err := getHTTPResponse(url, token)
-
-	defer resp.Body.Close()
-
 	if err != nil {
 		return &RateLimits{}, err
 	}
+	defer resp.Body.Close()
 
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
 	if resp.StatusCode == 404 {
