@@ -1,15 +1,11 @@
-FROM golang:1.9-alpine as build
+FROM golang:1.11 as build
 LABEL maintainer "Infinity Works"
 
-RUN apk --no-cache add ca-certificates \
-     && apk --no-cache add --virtual build-deps git
+COPY ./ /infinityworks/github-exporter
+WORKDIR /infinityworks/github-exporter
 
-COPY ./ /go/src/github.com/infinityworks/github-exporter
-WORKDIR /go/src/github.com/infinityworks/github-exporter
-
-RUN go get \
- && go test ./... \
- && go build -o /bin/main
+RUN go test ./... \
+     && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /bin/main .
 
 FROM alpine:3.6
 
