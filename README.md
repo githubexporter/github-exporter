@@ -38,20 +38,12 @@ docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, i
 
 ## Docker compose
 
-```
-github-exporter:
-    tty: true
-    stdin_open: true
-    expose:
-      - 9171
-    ports:
-      - 9171:9171
-    image: infinityworks/github-exporter:latest
-    environment:
-      - REPOS=<REPOS you want to monitor>
-      - GITHUB_TOKEN=<your github api token>
+A sample `docker-compose` configuration is available at [docker-compose.yml](./docker-compose.yml).
 
-```
+To run the application locally:
+1. Clone this repository
+1. Copy or rename [example.env](./example.env) to `local.env` and configure desired variables
+1. Run `docker-compose up`
 
 ## Metrics
 
