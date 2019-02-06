@@ -35,9 +35,12 @@ func Init() Config {
 	users := os.Getenv("USERS")
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
-	token, err := getAuth(tokenEnv, tokenFile)
+	token, authErr := getAuth(tokenEnv, tokenFile)
 	scraped, err := getScrapeURLs(url, repos, orgs, users)
 
+	if authErr != nil {
+		log.Errorf("Error initialising Authentication, Error: %v", authErr)
+	}
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
 	}
@@ -67,7 +70,7 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 
 	// User input validation, check that either repositories or organisations have been passed in
 	if len(repos) == 0 && len(orgs) == 0 && len(users) == 0 {
-		return urls, fmt.Errorf("No targets specified")
+		return urls, fmt.Errorf("no targets specified")
 	}
 
 	// Append repositories to the array

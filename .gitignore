@@ -1,0 +1,4 @@
+.build
+bin/github-exporter*
+github-exporter
+.idea

@@ -63,7 +63,7 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
 	if resp.StatusCode == 404 {
-		return &RateLimits{}, fmt.Errorf("Rate Limiting not enabled in GitHub API")
+		return &RateLimits{}, fmt.Errorf("rate limiting not enabled in GitHub API")
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)

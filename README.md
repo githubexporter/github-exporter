@@ -23,17 +23,41 @@ At least one of those 3 options should be provided.
 * `LOG_LEVEL` The level of logging the exporter will run with, defaults to `debug`
 
 
-## Install and deploy
+## Building
+
+This build uses a common makefile provided by the prometheus project. See `Makefile.common` for details
+Additionally the go build is performed by `promu` and is configured by `.promu.yml`
+
+To build the exporter binary:
+
+```
+make
+```
+
+To build the docker image:
+
+```
+make docker
+```
+
+To tag the current branch as latest:
+
+```
+make common-docker-tag-latest
+```
+
+To publish the docker image: (requires authentication)
+
+```
+make common-docker-publish
+```
+
+## Running
 
 Run manually from Docker Hub:
+
 ```
 docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" infinityworks/github-exporter
-```
-
-Build a docker image:
-```
-docker build -t <image-name> .
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" <image-name>
 ```
 
 ## Docker compose
