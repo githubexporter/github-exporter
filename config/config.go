@@ -12,7 +12,7 @@ import (
 	cfg "github.com/infinityworks/go-common/config"
 )
 
-// Config struct holds all of the runtime confgiguration for the application
+// Config struct holds all of the runtime configuration for the application
 type Config struct {
 	*cfg.BaseConfig
 	APIURL        string
