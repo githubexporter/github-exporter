@@ -2,7 +2,7 @@
 
 Below are an example of the metrics as exposed by this exporter.
 
-```
+```plaintext
 # HELP github_rate_limit Number of API queries allowed in a 60 minute window
 # TYPE github_rate_limit gauge
 github_rate_limit 5000
