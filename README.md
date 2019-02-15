@@ -24,7 +24,6 @@ At least one of those 3 options should be provided.
 * `METRICS_PATH` the metrics URL path you wish to use, defaults to `/metrics`
 * `LOG_LEVEL` The level of logging the exporter will run with, defaults to `debug`
 
-
 ## Install and deploy
 
 Run manually from Docker Hub:
@@ -63,4 +62,5 @@ An example of these metrics can be found in the `METRICS.md` markdown file in th
 
 ## Metadata
 
-[![](https://images.microbadger.com/badges/image/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own image badge on microbadger.com")[![](https://images.microbadger.com/badges/version/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own version badge on microbadger.com")
+[![Get your own image badge on microbadger.com](https://images.microbadger.com/badges/image/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter)
+[![Get your own version badge on microbadger.com](https://images.microbadger.com/badges/version/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter)
