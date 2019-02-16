@@ -1,0 +1,29 @@
+query ($owner: String!, $repo: String!, $stars: Boolean!, $issues: Boolean!, $watchers: Boolean!, $forks: Boolean!) {
+  repository(owner: $owner, name: $repo) {
+    stargazers @include(if: $stars) {
+      totalCount
+    }
+    issues @include(if: $issues) {
+      totalCount
+    }
+    watchers @include(if: $watchers) {
+      totalCount
+    }
+    forkCount @include(if: $forks)
+  }
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
+  }
+}
+
+{
+  "owner": "infinityworks",
+  "repo": "github-exporter",
+  "stars": true,
+  "issues": true,
+  "watchers": true,
+  "forks": true
+}
