@@ -52,7 +52,7 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	resp, err := getHTTPResponse(url, token) // do this earlier
 
 	if err != nil {
-		return fmt.Errorf("Error converting body to byte array: %v", err)
+		return fmt.Errorf("error converting body to byte array: %v", err)
 	}
 
 	// Read the body to a byte array so it can be used elsewhere
@@ -61,12 +61,12 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	defer resp.Body.Close()
 
 	if err != nil {
-		return fmt.Errorf("Error converting body to byte array: %v", err)
+		return fmt.Errorf("error converting body to byte array: %v", err)
 	}
 
 	// Triggers if a user specifies an invalid or not visible repository
 	if resp.StatusCode == 404 {
-		return fmt.Errorf("Error: Received 404 status from Github API, ensure the repository URL is correct. If it's a private repository, also check the oauth token is correct")
+		return fmt.Errorf("error: Received 404 status from Github API, ensure the repository URL is correct. If it's a private repository, also check the oauth token is correct")
 	}
 
 	ch <- &Response{url, resp, body, err}

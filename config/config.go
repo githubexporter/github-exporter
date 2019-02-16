@@ -67,7 +67,7 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 
 	// User input validation, check that either repositories or organisations have been passed in
 	if len(repos) == 0 && len(orgs) == 0 && len(users) == 0 {
-		return urls, fmt.Errorf("No targets specified")
+		return urls, fmt.Errorf("no targets specified")
 	}
 
 	// Append repositories to the array
@@ -79,7 +79,7 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 		}
 	}
 
-	// Append github orginisations to the array
+	// Append github organisations to the array
 	if orgs != "" {
 		o := strings.Split(orgs, ", ")
 		for _, x := range o {

@@ -52,7 +52,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 // Especially useful when operating without oauth and the subsequent lower cap.
 func getRates(baseURL string, token string) (*RateLimits, error) {
 
-	rateEndPoint := ("/rate_limit")
+	rateEndPoint := "/rate_limit"
 	url := fmt.Sprintf("%s%s", baseURL, rateEndPoint)
 
 	resp, err := getHTTPResponse(url, token)
@@ -63,7 +63,7 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
 	if resp.StatusCode == 404 {
-		return &RateLimits{}, fmt.Errorf("Rate Limiting not enabled in GitHub API")
+		return &RateLimits{}, fmt.Errorf("rate Limiting not enabled in GitHub API")
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
