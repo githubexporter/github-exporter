@@ -1,5 +1,5 @@
-FROM golang:1.10.8-alpine as build
-LABEL maintainer "Infinity Works"
+FROM golang:1.11.5-alpine as build
+LABEL maintainer="Infinity Works"
 
 RUN apk --no-cache add ca-certificates \
      && apk --no-cache add --virtual build-deps git
