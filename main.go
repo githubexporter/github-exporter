@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"os"
 
@@ -49,7 +50,8 @@ func main() {
 	prometheus.MustRegister(&conf)
 
 	// Setup HTTP handler
-	// http.Handle(applicationCfg.MetricsPath(), prometheus.Handler())
+	http.Handle(applicationCfg.MetricsPath(), promhttp.Handler())
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 		                <head><title>Github Exporter</title></head>
