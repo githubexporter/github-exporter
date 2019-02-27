@@ -1,11 +1,10 @@
-FROM golang:1.11.5-alpine as build
+FROM golang:1.12-alpine as build
 LABEL maintainer="Infinity Works"
 
-RUN apk --no-cache add ca-certificates \
-     && apk --no-cache add --virtual build-deps git
+RUN apk --no-cache add ca-certificates build-base git
 
-COPY ./ /go/src/github.com/infinityworks/github-exporter
-WORKDIR /go/src/github.com/infinityworks/github-exporter
+COPY ./ /github-exporter
+WORKDIR /github-exporter
 
 RUN go get \
  && go test ./... \
