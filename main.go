@@ -14,6 +14,8 @@ import (
 	"github.com/shurcooL/githubv4"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+
+	"github.com/spf13/viper"
 )
 
 var (
@@ -26,6 +28,13 @@ func init() {
 	applicationCfg = conf.Init()
 	mets = exporter.AddMetrics()
 	log = logger.Start(&applicationCfg)
+
+	viper.SetDefault("stars", false)
+	viper.SetDefault("forks", false)
+	viper.SetDefault("issues", false)
+	viper.SetDefault("watchers", false)
+	viper.SetDefault("size", false)
+
 }
 
 func main() {
