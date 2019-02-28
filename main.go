@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/spf13/viper"
 	"net/http"
 
 	"github.com/fatih/structs"
@@ -9,7 +10,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -18,9 +18,10 @@ var (
 )
 
 func init() {
-	log.SetFormatter(&log.JSONFormatter{})
 	viper.AutomaticEnv()
+	log.SetFormatter(&log.JSONFormatter{})
 	log.SetLevel(conf.LogLevel())
+
 	applicationCfg = conf.Init()
 	mets = exporter.AddMetrics()
 }

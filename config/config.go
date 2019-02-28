@@ -2,13 +2,12 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
-	"os"
+	log "github.com/sirupsen/logrus"
 )
 
 // Config struct holds all of the runtime configuration for the application
@@ -22,19 +21,6 @@ type Config struct {
 	APITokenFile  string
 	APIToken      string
 	TargetURLs    []string
-}
-
-func init() {
-	viper.SetDefault("METRICS_PATH", "/metrics")
-	viper.SetDefault("LISTEN_PORT", "8080")
-	viper.SetDefault("LOG_LEVEL", "debug")
-	viper.SetDefault("APP_NAME", "app")
-	viper.SetDefault("API_URL", "https://api.github.com")
-
-	viper.BindEnv("METRICS_PATH")
-	viper.BindEnv("LISTEN_PORT")
-	viper.BindEnv("LOG_LEVEL")
-	viper.BindEnv("APP_NAME")
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -51,11 +37,11 @@ func Init() Config {
 		APIURL: viper.GetString("API_URL"),
 	}
 
-	repos := os.Getenv("REPOS")
-	orgs := os.Getenv("ORGS")
-	users := os.Getenv("USERS")
-	tokenEnv := os.Getenv("GITHUB_TOKEN")
-	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
+	repos := viper.GetString("REPOS")
+	orgs := viper.GetString("ORGS")
+	users := viper.GetString("USERS")
+	tokenEnv := viper.GetString("GITHUB_TOKEN")
+	tokenFile := viper.GetString("GITHUB_TOKEN_FILE")
 
 	token, err := getAuth(tokenEnv, tokenFile)
 	scraped, err := getScrapeURLs(ac.APIURL, repos, orgs, users)
