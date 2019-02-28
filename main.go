@@ -23,15 +23,13 @@ func init() {
 	log.SetLevel(conf.LogLevel())
 	applicationCfg = conf.Init()
 	mets = exporter.AddMetrics()
-	//log = logger.Start(&applicationCfg)
-
 }
 
 func main() {
 
 	log.WithFields(structs.Map(applicationCfg)).Info("Starting Exporter")
 
-	conf := exporter.Exporter{
+	exporter := exporter.Exporter{
 		APIMetrics: mets,
 		Config:     applicationCfg,
 	}
@@ -48,7 +46,7 @@ func main() {
 
 	// Register Metrics from each of the endpoints
 	// This invokes the Collect method through the prometheus client libraries.
-	prometheus.MustRegister(&conf)
+	prometheus.MustRegister(&exporter)
 
 	// Setup HTTP handler
 	http.Handle(applicationCfg.MetricsPath, promhttp.Handler())
