@@ -1,5 +1,5 @@
 package config
 
 type APIConfig struct {
-	APIURL        string
+	APIURL string
 }

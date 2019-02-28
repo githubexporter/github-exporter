@@ -50,7 +50,7 @@ func Init() Config {
 	ac := APIConfig{
 		APIURL: viper.GetString("API_URL"),
 	}
-	
+
 	repos := os.Getenv("REPOS")
 	orgs := os.Getenv("ORGS")
 	users := os.Getenv("USERS")
