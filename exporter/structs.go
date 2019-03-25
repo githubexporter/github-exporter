@@ -58,12 +58,14 @@ type CommitDatum struct {
 }
 
 type CommitHistory struct {
-	Repo  string
-	Count float64
+	Author string
+	Repo   string
+	Count  float64
 }
 
 type LatestCommitHistory struct {
 	Author string
+	Repo   string
 	Date   string
 	Hash   string
 }
