@@ -57,6 +57,17 @@ type CommitDatum struct {
 	} `json:"parents"`
 }
 
+type CommitHistory struct {
+	Repo  string
+	Count float64
+}
+
+type LatestCommitHistory struct {
+	Author string
+	Date   string
+	Hash   string
+}
+
 // RateLimits is used to store rate limit data into a struct
 // This data is later represented as a metric, captured at the end of a scrape
 type RateLimits struct {

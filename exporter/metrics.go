@@ -40,12 +40,12 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["CommitsHistory"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "commit", "count"),
 		"Total number of commits for given repository and given branch",
-		[]string{"branch", "author"}, nil,
+		[]string{"repo", "branch", "author"}, nil,
 	)
 	APIMetrics["LatestCommit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "commit", "latest"),
 		"Latest Commit for a given repository and given branch",
-		[]string{"branch", "author", "date", "commithash"}, nil,
+		[]string{"repo", "branch", "author", "date", "commithash"}, nil,
 	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
@@ -79,25 +79,29 @@ func (e *Exporter) processMetrics(data []*Datum, commitData []*CommitDatum, rate
 	}
 
 	branch := e.Config.Branch
-	latestCommitAuthor, latestCommitDate, latestCommitHash := "", "", ""
-	totalCommits := make(map[string]float64)
-	for i, x := range commitData {
-		if i == 0 {
-			latestCommitDate = strings.Split(x.Commit.Author.Date, "T")[0]
-			latestCommitAuthor = x.Commit.Author.Name
-			latestCommitHash = x.CommitHash
-		}
+	latestCommits := make(map[string]*LatestCommitHistory)
+	totalCommits := make(map[string]*CommitHistory)
+	for _, x := range commitData {
+		shortenedRepo := strings.Replace(x.URL, "https://api.github.com/repos/", "", -1)
+		repo := shortenedRepo[:strings.Index(shortenedRepo, "/commits")]
 		author := x.Commit.Author.Name
+		if _, ok := latestCommits[repo]; !ok {
+			date := strings.Split(x.Commit.Author.Date, "T")[0]
+			hash := x.CommitHash
+			latestCommits[repo] = &LatestCommitHistory{author, date, hash}
+		}
 		if _, ok := totalCommits[author]; ok {
-			totalCommits[author]++
+			totalCommits[author].Count++
 		} else {
-			totalCommits[author] = 1.0
+			totalCommits[author] = &CommitHistory{repo, 1.0}
 		}
 	}
 	for author, val := range totalCommits {
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["CommitsHistory"], prometheus.GaugeValue, val, branch, author)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["CommitsHistory"], prometheus.GaugeValue, val.Count, val.Repo, branch, author)
 	}
-	ch <- prometheus.MustNewConstMetric(e.APIMetrics["LatestCommit"], prometheus.GaugeValue, 1.0, branch, latestCommitAuthor, latestCommitDate, latestCommitHash)
+	for repo, val := range latestCommits {
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["LatestCommit"], prometheus.GaugeValue, 1.0, repo, branch, val.Author, val.Date, val.Hash)
+	}
 
 	// Set Rate limit stats
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, rates.Limit)
