@@ -1,7 +1,11 @@
 package exporter
 
-import "github.com/prometheus/client_golang/prometheus"
-import "strconv"
+import (
+	"strconv"
+	"strings"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 // AddMetrics - Add's all of the metrics to a map of strings, returns the map.
 func AddMetrics() map[string]*prometheus.Desc {
@@ -33,6 +37,16 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Size in KB for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
+	APIMetrics["CommitsHistory"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "commit", "count"),
+		"Total number of commits for given repository and given branch",
+		[]string{"branch", "author"}, nil,
+	)
+	APIMetrics["LatestCommit"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "commit", "latest"),
+		"Latest Commit for a given repository and given branch",
+		[]string{"branch", "author", "date", "commithash"}, nil,
+	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
 		"Number of API queries allowed in a 60 minute window",
@@ -53,7 +67,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 }
 
 // processMetrics - processes the response data and sets the metrics using it as a source
-func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- prometheus.Metric) error {
+func (e *Exporter) processMetrics(data []*Datum, commitData []*CommitDatum, rates *RateLimits, ch chan<- prometheus.Metric) error {
 
 	// APIMetrics - range through the data slice
 	for _, x := range data {
@@ -62,8 +76,28 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssues, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, x.Watchers, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
-
 	}
+
+	branch := e.Config.Branch
+	latestCommitAuthor, latestCommitDate, latestCommitHash := "", "", ""
+	totalCommits := make(map[string]float64)
+	for i, x := range commitData {
+		if i == 0 {
+			latestCommitDate = strings.Split(x.Commit.Author.Date, "T")[0]
+			latestCommitAuthor = x.Commit.Author.Name
+			latestCommitHash = x.CommitHash
+		}
+		author := x.Commit.Author.Name
+		if _, ok := totalCommits[author]; ok {
+			totalCommits[author]++
+		} else {
+			totalCommits[author] = 1.0
+		}
+	}
+	for author, val := range totalCommits {
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["CommitsHistory"], prometheus.GaugeValue, val, branch, author)
+	}
+	ch <- prometheus.MustNewConstMetric(e.APIMetrics["LatestCommit"], prometheus.GaugeValue, 1.0, branch, latestCommitAuthor, latestCommitDate, latestCommitHash)
 
 	// Set Rate limit stats
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, rates.Limit)

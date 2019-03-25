@@ -10,5 +10,8 @@ services:
       - 9171:9171
     image: infinityworks/github-exporter:latest 
     environment:
-      - REPOS=<REPOS you want to monitor>
+      - REPOS=<REPOS you want to monitor separated by a comma>
+      - BRANCH=<BRANCH you want to look at for commit history>
       - GITHUB_TOKEN=<your github api token>
+      - LOG_LEVEL=<log level - default is DEBUG>
+

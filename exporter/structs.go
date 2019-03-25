@@ -39,6 +39,24 @@ type Datum struct {
 	Size       float64 `json:"size"`
 }
 
+// CommitData is used to store an array of CommitDatum
+type CommitData []CommitDatum
+
+// CommitDatum is used to store commit historical data
+type CommitDatum struct {
+	CommitHash string `json:"sha"`
+	Commit     struct {
+		Author struct {
+			Name string `json:"name"`
+			Date string `json:"date"`
+		} `json:"author"`
+	} `json:"commit"`
+	URL     string `json:"url"`
+	Parents []struct {
+		CommitHash string `json:"sha"`
+	} `json:"parents"`
+}
+
 // RateLimits is used to store rate limit data into a struct
 // This data is later represented as a metric, captured at the end of a scrape
 type RateLimits struct {
