@@ -85,10 +85,10 @@ func (e *Exporter) processMetrics(data []*Datum, commitData []*CommitDatum, rate
 		shortenedRepo := strings.Replace(x.URL, "https://api.github.com/repos/", "", -1)
 		repo := shortenedRepo[:strings.Index(shortenedRepo, "/commits")]
 		author := x.Commit.Author.Name
-		if _, ok := latestCommits[author+repo]; !ok {
+		if _, ok := latestCommits[repo]; !ok {
 			date := strings.Split(x.Commit.Author.Date, "T")[0]
 			hash := x.CommitHash
-			latestCommits[author+repo] = &LatestCommitHistory{author, repo, date, hash}
+			latestCommits[repo] = &LatestCommitHistory{author, repo, date, hash}
 		}
 		if _, ok := totalCommits[author+repo]; ok {
 			totalCommits[author+repo].Count++
