@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/tomnomnom/linkheader"
 )
 
 func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
+	// Expand targets by following GitHub pagination links
+	targets = paginateTargets(targets, token)
 
 	// Channels used to enable concurrent requests
 	ch := make(chan *Response, len(targets))
@@ -42,6 +47,46 @@ func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 		}
 
 	}
+}
+
+// paginateTargets returns all pages for the provided targets
+func paginateTargets(targets []string, token string) []string {
+
+	paginated := targets
+
+	for _, url := range targets {
+
+		// make a request to the original target to get link header if it exists
+		resp, err := getHTTPResponse(url, token)
+		if err != nil {
+			log.Errorf("Error retrieving Link headers, Error: %s", err)
+		}
+
+		if resp.Header["Link"] != nil {
+			links := linkheader.Parse(resp.Header["Link"][0])
+
+			for _, link := range links {
+				if link.Rel == "last" {
+
+					subs := strings.Split(link.URL, "&page=")
+
+					lastPage, err := strconv.Atoi(subs[len(subs)-1])
+					if err != nil {
+						log.Errorf("Unable to convert page substring to int, Error: %s", err)
+					}
+
+					// add all pages to the slice of targets to return
+					for page := 2; page <= lastPage; page++ {
+						pageURL := fmt.Sprintf("%s&page=%v", url, page)
+						paginated = append(paginated, pageURL)
+					}
+
+					break
+				}
+			}
+		}
+	}
+	return paginated
 }
 
 // getResponse collects an individual http.response and returns a *Response
