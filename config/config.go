@@ -17,6 +17,7 @@ type Config struct {
 	*cfg.BaseConfig
 	APIURL        string
 	Repositories  string
+	Branch        string
 	Organisations string
 	Users         string
 	APITokenEnv   string
@@ -31,12 +32,13 @@ func Init() Config {
 	ac := cfg.Init()
 	url := cfg.GetEnv("API_URL", "https://api.github.com")
 	repos := os.Getenv("REPOS")
+	branch := os.Getenv("BRANCH")
 	orgs := os.Getenv("ORGS")
 	users := os.Getenv("USERS")
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	token, err := getAuth(tokenEnv, tokenFile)
-	scraped, err := getScrapeURLs(url, repos, orgs, users)
+	scraped, err := getScrapeURLs(url, repos, branch, orgs, users)
 
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
@@ -46,6 +48,7 @@ func Init() Config {
 		&ac,
 		url,
 		repos,
+		branch,
 		orgs,
 		users,
 		tokenEnv,
@@ -59,7 +62,7 @@ func Init() Config {
 
 // Init populates the Config struct based on environmental runtime configuration
 // All URL's are added to the TargetURL's string array
-func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
+func getScrapeURLs(apiURL, repos, branch, orgs, users string) ([]string, error) {
 
 	urls := []string{}
 
@@ -76,6 +79,9 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 		for _, x := range rs {
 			y := fmt.Sprintf("%s/repos/%s%s", apiURL, x, opts)
 			urls = append(urls, y)
+			// Append commits history to the array
+			z := fmt.Sprintf("%s/repos/%s/commits%s&sha=%s", apiURL, x, opts, branch)
+			urls = append(urls, z)
 		}
 	}
 

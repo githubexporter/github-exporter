@@ -1,36 +1,65 @@
 package exporter
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
 // gatherData - Collects the data from the API and stores into struct
-func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
+func (e *Exporter) gatherData() ([]*Datum, []*CommitDatum, *RateLimits, error) {
 
 	data := []*Datum{}
+	commitData := []*CommitDatum{}
 
 	responses, err := asyncHTTPGets(e.TargetURLs, e.APIToken)
 
 	if err != nil {
-		return data, nil, err
+		return data, commitData, nil, err
 	}
 
+	opts := "?&per_page=100"
 	for _, response := range responses {
 
 		// Github can at times present an array, or an object for the same data set.
 		// This code checks handles this variation.
 		if isArray(response.body) {
-			ds := []*Datum{}
-			json.Unmarshal(response.body, &ds)
-			data = append(data, ds...)
+			if isCommitData(response.body) {
+				cds := []*CommitDatum{}
+				json.Unmarshal(response.body, &cds)
+				commitData = append(commitData, cds...)
+				for len(commitData[len(commitData)-1].Parents) != 0 {
+					apiURL := strings.Split(commitData[len(commitData)-1].URL, "/commits/")[0]
+					urls := []string{fmt.Sprintf("%s/commits%s&sha=%s", apiURL, opts, commitData[len(commitData)-1].CommitHash)}
+					responsesNext, err := asyncHTTPGets(urls, e.APIToken)
+					if err != nil {
+						break
+					}
+					for _, r := range responsesNext {
+						cds = []*CommitDatum{}
+						json.Unmarshal(r.body, &cds)
+						commitData = append(commitData, cds...)
+					}
+				}
+			} else {
+				ds := []*Datum{}
+				json.Unmarshal(response.body, &ds)
+				data = append(data, ds...)
+			}
 		} else {
-			d := new(Datum)
-			json.Unmarshal(response.body, &d)
-			data = append(data, d)
+			if isCommitData(response.body) {
+				cd := new(CommitDatum)
+				json.Unmarshal(response.body, &cd)
+				commitData = append(commitData, cd)
+			} else {
+				d := new(Datum)
+				json.Unmarshal(response.body, &d)
+				data = append(data, d)
+			}
 		}
 
 		log.Infof("API data fetched for repository: %s", response.url)
@@ -43,8 +72,8 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 		log.Errorf("Unable to obtain rate limit data from API, Error: %s", err)
 	}
 
-	//return data, rates, err
-	return data, rates, nil
+	//return data, commitData, rates, err
+	return data, commitData, rates, nil
 
 }
 
@@ -107,4 +136,16 @@ func isArray(body []byte) bool {
 
 	return isArray
 
+}
+
+func isCommitData(body []byte) bool {
+
+	isCommitData := false
+
+	data := body[:10]
+	if bytes.Contains(data, []byte(`"sha":`)) {
+		isCommitData = true
+	}
+
+	return isCommitData
 }
