@@ -60,6 +60,7 @@ func paginateTargets(targets []string, token string) []string {
 		resp, err := getHTTPResponse(url, token)
 		if err != nil {
 			log.Errorf("Error retrieving Link headers, Error: %s", err)
+			continue
 		}
 
 		if resp.Header["Link"] != nil {
