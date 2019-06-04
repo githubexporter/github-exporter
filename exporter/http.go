@@ -96,16 +96,14 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	log.Infof("Fetching %s \n", url)
 
 	resp, err := getHTTPResponse(url, token) // do this earlier
-
 	if err != nil {
-		return fmt.Errorf("Error converting body to byte array: %v", err)
+		return fmt.Errorf("Error fetching http response: %v", err)
 	}
+	defer resp.Body.Close()
+
 
 	// Read the body to a byte array so it can be used elsewhere
 	body, err := ioutil.ReadAll(resp.Body)
-
-	defer resp.Body.Close()
-
 	if err != nil {
 		return fmt.Errorf("Error converting body to byte array: %v", err)
 	}
