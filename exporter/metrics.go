@@ -3,6 +3,7 @@ package exporter
 import "github.com/prometheus/client_golang/prometheus"
 import "strconv"
 
+
 // AddMetrics - Add's all of the metrics to a map of strings, returns the map.
 func AddMetrics() map[string]*prometheus.Desc {
 
@@ -32,6 +33,11 @@ func AddMetrics() map[string]*prometheus.Desc {
 		prometheus.BuildFQName("github", "repo", "size_kb"),
 		"Size in KB for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
+	)
+	APIMetrics["ReleaseDownloads"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "release_downloads"),
+		"Download count for a given release",
+		[]string{"repo", "user", "name"}, nil,
 	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
@@ -63,6 +69,11 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, x.Watchers, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 
+		for _, release := range x.Releases {
+			for _, asset := range release.Assets {
+				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, asset.Name)
+			}
+		}
 	}
 
 	// Set Rate limit stats
