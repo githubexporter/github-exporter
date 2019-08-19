@@ -46,9 +46,10 @@ type Release struct {
 }
 
 type Asset struct {
-	Name      string  `json:"name"`
-	Size      int64 `json:"size"`
-	Downloads int32 `json:"download_count"`
+	Name      string `json:"name"`
+	Size      int64  `json:"size"`
+	Downloads int32  `json:"download_count"`
+	CreatedAt string `json:"created_at"`
 }
 
 // RateLimits is used to store rate limit data into a struct
