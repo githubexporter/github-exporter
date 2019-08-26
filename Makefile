@@ -1,3 +1,5 @@
+.PHONY: install test build
+
 install:
 	@go mod download
 
