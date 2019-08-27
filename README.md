@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/infinityworks/github-exporter.svg?branch=master)](https://travis-ci.org/infinityworks/github-exporter)
+
 # Prometheus GitHub Exporter
 
 Exposes basic metrics for your repositories from the GitHub API, to a Prometheus compatible endpoint.
