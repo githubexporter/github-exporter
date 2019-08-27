@@ -1,17 +1,16 @@
-FROM golang:1.9-alpine as build
-LABEL maintainer "Infinity Works"
+FROM golang:1.12-stretch as build
+LABEL maintainer="Infinity Works"
 
-RUN apk --no-cache add ca-certificates \
-     && apk --no-cache add --virtual build-deps git
+ENV GO111MODULE=on
 
 COPY ./ /go/src/github.com/infinityworks/github-exporter
 WORKDIR /go/src/github.com/infinityworks/github-exporter
 
-RUN go get \
- && go test ./... \
- && go build -o /bin/main
+RUN go mod download \
+    && go test ./... \
+    && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
 
-FROM alpine:3.6
+FROM alpine:3.10
 
 RUN apk --no-cache add ca-certificates \
      && addgroup exporter \
