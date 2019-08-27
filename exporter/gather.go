@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+    "strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -29,6 +30,11 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 			data = append(data, ds...)
 		} else {
 			d := new(Datum)
+
+			// Get releases
+			if strings.Contains(response.url, "/repos/") {
+				getReleases(e, response.url, &d.Releases)
+			}
 			json.Unmarshal(response.body, &d)
 			data = append(data, d)
 		}
@@ -42,6 +48,7 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 	if err != nil {
 		log.Errorf("Unable to obtain rate limit data from API, Error: %s", err)
 	}
+
 
 	//return data, rates, err
 	return data, rates, nil
@@ -90,6 +97,19 @@ func getRates(baseURL string, token string) (*RateLimits, error) {
 		Reset:     reset,
 	}, err
 
+}
+
+func getReleases(e *Exporter, url string, data *[]Release) {
+	i := strings.Index(url, "?")
+	baseURL := url[:i]
+	releasesURL := baseURL + "/releases"
+	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.APIToken)
+
+	if err != nil {
+		log.Errorf("Unable to obtain releases from API, Error: %s", err)
+	}
+
+	json.Unmarshal(releasesResponse[0].body, &data)
 }
 
 // isArray simply looks for key details that determine if the JSON response is an array or not.

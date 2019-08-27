@@ -27,6 +27,8 @@ github_repo_stars{archived="false",fork="false",language="Go",license="mit",priv
 # HELP github_repo_watchers Total number of watchers/subscribers for given repository
 # TYPE github_repo_watchers gauge
 github_repo_watchers{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="infinityworks"} 10
+# TYPE github_repo_release_downloads gauge
+github_repo_release_downloads{name="release1.0.0",repo="github-exporter",user="infinityworks"} 3500
 ```
 
 <!--
