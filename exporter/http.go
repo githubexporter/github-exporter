@@ -101,7 +101,6 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	}
 	defer resp.Body.Close()
 
-
 	// Read the body to a byte array so it can be used elsewhere
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

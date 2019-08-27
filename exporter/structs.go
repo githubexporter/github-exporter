@@ -28,15 +28,15 @@ type Datum struct {
 	License struct {
 		Key string `json:"key"`
 	} `json:"license"`
-	Language   string    `json:"language"`
-	Archived   bool      `json:"archived"`
-	Private    bool      `json:"private"`
-	Fork       bool      `json:"fork"`
-	Forks      float64   `json:"forks"`
-	Stars      float64   `json:"stargazers_count"`
-	OpenIssues float64   `json:"open_issues"`
-	Watchers   float64   `json:"subscribers_count"`
-	Size       float64   `json:"size"`
+	Language   string  `json:"language"`
+	Archived   bool    `json:"archived"`
+	Private    bool    `json:"private"`
+	Fork       bool    `json:"fork"`
+	Forks      float64 `json:"forks"`
+	Stars      float64 `json:"stargazers_count"`
+	OpenIssues float64 `json:"open_issues"`
+	Watchers   float64 `json:"subscribers_count"`
+	Size       float64 `json:"size"`
 	Releases   []Release
 }
 

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-    "strings"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -48,7 +48,6 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 	if err != nil {
 		log.Errorf("Unable to obtain rate limit data from API, Error: %s", err)
 	}
-
 
 	//return data, rates, err
 	return data, rates, nil
