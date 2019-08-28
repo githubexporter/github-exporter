@@ -60,5 +60,14 @@ github-exporter:
 Metrics will be made available on port 9171 by default
 An example of these metrics can be found in the `METRICS.md` markdown file in the root of this repository
 
+## Tests
+
+There is a set of blackbox behavioural tests which validate metrics endpoint in the `test` directory. 
+Run as follows
+
+```bash
+make test
+```
+
 ## Metadata
 [![](https://images.microbadger.com/badges/image/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own image badge on microbadger.com") [![](https://images.microbadger.com/badges/version/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own version badge on microbadger.com")
