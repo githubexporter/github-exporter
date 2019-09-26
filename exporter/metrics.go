@@ -18,6 +18,11 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Total number of open issues for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
+	APIMetrics["Contributors"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "contributors"),
+		"Total number of contributors for given repository",
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"), nil,
+	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
 		"Total number of watchers/subscribers for given repository",
