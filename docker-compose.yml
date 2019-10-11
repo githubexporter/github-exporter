@@ -10,5 +10,5 @@ services:
       - 9171:9171
     image: infinityworks/github-exporter:latest
     environment:
-      - REPOS=<REPOS you want to monitor>
-      - GITHUB_TOKEN=<your github api token>
+      - REPOS=prabhakarms89/github-exporter
+      - GITHUB_TOKEN=ceeae7789b4d8b329386cacf362495775662dea5
