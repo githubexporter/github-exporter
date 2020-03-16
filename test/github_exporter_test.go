@@ -108,14 +108,14 @@ func githubReleases() *apitest.Mock {
 }
 
 func githubPulls() *apitest.Mock {
-        return apitest.NewMock().
-                Get("https://api.github.com/repos/myOrg/myRepo/pulls").
-                Header("Authorization", "token 12345").
-                RespondWith().
-                Times(2).
-                Body(readFile("testdata/pulls_response.json")).
-                Status(http.StatusOK).
-                End()
+	return apitest.NewMock().
+		Get("https://api.github.com/repos/myOrg/myRepo/pulls").
+		Header("Authorization", "token 12345").
+		RespondWith().
+		Times(2).
+		Body(readFile("testdata/pulls_response.json")).
+		Status(http.StatusOK).
+		End()
 }
 
 func readFile(path string) string {
