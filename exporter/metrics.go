@@ -22,7 +22,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 		prometheus.BuildFQName("github", "repo", "pull_request_count"),
 		"Total number of pull requests for given repository",
 		[]string{}, nil,
-        )
+	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
 		"Total number of watchers/subscribers for given repository",
@@ -78,7 +78,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 			}
 		}
 		prCount := 0
-		for _, _ = range x.Pulls {
+		for range x.Pulls {
 			prCount += 1
 		}
 		// issueCount = x.OpenIssue - prCount
