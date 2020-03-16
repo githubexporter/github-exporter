@@ -33,6 +33,7 @@ func TestGithubExporter(t *testing.T) {
 		githubRepos(),
 		githubRateLimit(),
 		githubReleases(),
+		githubPulls(),
 	).
 		Get("/metrics").
 		Expect(t).
@@ -40,6 +41,7 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_rate_remaining 60`)).
 		Assert(bodyContains(`github_rate_reset 1.566853865e+09`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 10`)).
+		Assert(bodyContains(`github_repo_pull_request_count 3`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 2`)).
 		Assert(bodyContains(`github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 946`)).
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
@@ -103,6 +105,17 @@ func githubReleases() *apitest.Mock {
 		Body(readFile("testdata/releases_response.json")).
 		Status(http.StatusOK).
 		End()
+}
+
+func githubPulls() *apitest.Mock {
+        return apitest.NewMock().
+                Get("https://api.github.com/repos/myOrg/myRepo/pulls").
+                Header("Authorization", "token 12345").
+                RespondWith().
+                Times(2).
+                Body(readFile("testdata/pulls_response.json")).
+                Status(http.StatusOK).
+                End()
 }
 
 func readFile(path string) string {
