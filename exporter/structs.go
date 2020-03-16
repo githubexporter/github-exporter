@@ -38,11 +38,19 @@ type Datum struct {
 	Watchers   float64 `json:"subscribers_count"`
 	Size       float64 `json:"size"`
 	Releases   []Release
+	Pulls      []Pull
 }
 
 type Release struct {
 	Name   string  `json:"name"`
 	Assets []Asset `json:"assets"`
+}
+
+type Pull struct {
+	Url  string `json:"url"`
+	User struct {
+		Login string `json:"login"`
+	} `json:"user"`
 }
 
 type Asset struct {
