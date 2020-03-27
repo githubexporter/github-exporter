@@ -1,6 +1,6 @@
 module github.com/infinityworks/github-exporter
 
-go 1.12
+go 1.14
 
 require (
 	github.com/fatih/structs v1.1.0
