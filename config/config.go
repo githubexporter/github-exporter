@@ -65,9 +65,8 @@ func getScrapeURLs(apiURL, repos, orgs, users string) ([]string, error) {
 
 	opts := "?&per_page=100" // Used to set the Github API to return 100 results per page (max)
 
-	// User input validation, check that either repositories or organisations have been passed in
 	if len(repos) == 0 && len(orgs) == 0 && len(users) == 0 {
-		return urls, fmt.Errorf("No targets specified")
+		log.Info("No targets specified. Only rate limit endpoint will be scraped")
 	}
 
 	// Append repositories to the array
