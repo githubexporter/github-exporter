@@ -69,5 +69,14 @@ Run as follows
 make test
 ```
 
+## Version Release Procedure
+Once a new pull request has been merged into `master` the following script should be executed locally. The script will trigger a new image build in docker hub with the new image having the tag `release-<version>`. The version is taken from the `VERSION` file and must follow semantic versioning. For more information see [semver.org](https://semver.org/).
+
+Prior to running the following command ensure the number has been increased to desired version in `VERSION`: 
+
+```bash
+./release-version.sh
+```
+
 ## Metadata
 [![](https://images.microbadger.com/badges/image/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own image badge on microbadger.com") [![](https://images.microbadger.com/badges/version/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own version badge on microbadger.com")
