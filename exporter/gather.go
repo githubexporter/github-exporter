@@ -10,14 +10,14 @@ import (
 )
 
 // gatherData - Collects the data from the API and stores into struct
-func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
+func (e *Exporter) gatherData() ([]*Datum, error) {
 
 	data := []*Datum{}
 
 	responses, err := asyncHTTPGets(e.TargetURLs, e.APIToken)
 
 	if err != nil {
-		return data, nil, err
+		return data, err
 	}
 
 	for _, response := range responses {
@@ -46,26 +46,19 @@ func (e *Exporter) gatherData() ([]*Datum, *RateLimits, error) {
 		log.Infof("API data fetched for repository: %s", response.url)
 	}
 
-	// Check the API rate data and store as a metric
-	rates, err := getRates(e.APIURL, e.APIToken)
-
-	if err != nil {
-		log.Errorf("Unable to obtain rate limit data from API, Error: %s", err)
-	}
-
 	//return data, rates, err
-	return data, rates, nil
+	return data, nil
 
 }
 
 // getRates obtains the rate limit data for requests against the github API.
 // Especially useful when operating without oauth and the subsequent lower cap.
-func getRates(baseURL string, token string) (*RateLimits, error) {
+func (e *Exporter) getRates() (*RateLimits, error) {
 
 	rateEndPoint := ("/rate_limit")
-	url := fmt.Sprintf("%s%s", baseURL, rateEndPoint)
+	url := fmt.Sprintf("%s%s", e.APIURL, rateEndPoint)
 
-	resp, err := getHTTPResponse(url, token)
+	resp, err := getHTTPResponse(url, e.APIToken)
 	if err != nil {
 		return &RateLimits{}, err
 	}

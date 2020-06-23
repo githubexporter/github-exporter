@@ -18,11 +18,20 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // This function is called when a scrape is peformed on the /metrics page
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
+	data := []*Datum{}
+	var err error
 	// Scrape the Data from Github
-	var data, rates, err = e.gatherData()
+	if len(e.TargetURLs) > 0 {
+		data, err = e.gatherData()
+		if err != nil {
+			log.Errorf("Error gathering Data from remote API: %v", err)
+			return
+		}
+	}
 
+	rates, err := e.getRates()
 	if err != nil {
-		log.Errorf("Error gathering Data from remote API: %v", err)
+		log.Errorf("Error gathering Rates from remote API: %v", err)
 		return
 	}
 

@@ -6,17 +6,12 @@ Exposes basic metrics for your repositories from the GitHub API, to a Prometheus
 
 ## Configuration
 
-This exporter is setup to take input from environment variables:
+This exporter is setup to take input from environment variables. All variables are optional:
 
-### Required
 * `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2".
 * `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
 * `USERS` If supplied, the exporter will enumerate all repositories for that users. Expected in
 the format "user1, user2".
-
-At least one of those 3 options should be provided.
-
-### Optional
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `GITHUB_TOKEN_FILE` If supplied _instead of_ `GITHUB_TOKEN`, enables the user to supply a path to a file containing a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `API_URL` Github API URL, shouldn't need to change this. Defaults to `https://api.github.com`
