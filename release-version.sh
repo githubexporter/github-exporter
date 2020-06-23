@@ -4,7 +4,7 @@
 git checkout master
 git pull origin master
 
-version=$(cat VERSION.txt)
+version=$(cat VERSION)
 echo "version: $version"
 
 # exist if tag alredy exists.
