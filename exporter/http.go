@@ -12,6 +12,9 @@ import (
 	"github.com/tomnomnom/linkheader"
 )
 
+// RateLimitExceededStatus is the status response from github when the rate limit is exceeded.
+const RateLimitExceededStatus = "403 rate limit exceeded"
+
 func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 	// Expand targets by following GitHub pagination links
 	targets = paginateTargets(targets, token)
@@ -139,6 +142,11 @@ func getHTTPResponse(url string, token string) (*http.Response, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	// check rate limit exceeded.
+	if resp.Status == RateLimitExceededStatus {
+		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
 	return resp, err
