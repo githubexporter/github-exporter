@@ -1,4 +1,4 @@
-FROM golang:1.14.0-stretch as build
+FROM golang:1.14.8-stretch as build
 LABEL maintainer="Infinity Works"
 
 ENV GO111MODULE=on
