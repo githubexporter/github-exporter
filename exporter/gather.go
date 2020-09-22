@@ -1,140 +1,143 @@
 package exporter
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 )
 
+// newClient provides an authenticated Github
+// client for use in our API interactions
+func newClient() *github.Client {
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: "61cda16368b55f394e3068571308739df3188392"},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+
+	return github.NewClient(tc)
+}
+
+func (e *Exporter) gatherOrgMetrics(client *github.Client) {
+
+	// Only execute if these have been defined
+	if len(e.Organisations) == 0 {
+		return
+	}
+
+	opt := &github.RepositoryListByOrgOptions{
+		ListOptions: github.ListOptions{
+			Page:    1,
+			PerPage: 100,
+		},
+	}
+
+	// Loop through the organizations passed in
+	for _, y := range e.Config.Organisations {
+
+		// collect basic repository information for the org
+		repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, opt)
+		if err != nil {
+			fmt.Printf("Error: %v", err)
+		}
+
+		em := enrichMetrics(client, repos)
+		println("Remaining requests...", resp.Remaining)
+
+		e.Repositories = append(e.Repositories, em...)
+
+	}
+}
+
+// Adds metrics not available in the standard repository response
+func enrichMetrics(client *github.Client, repos []*github.Repository) []*RepositoryMetrics {
+
+	// First, let's create an empty struct we can return
+	em := []*RepositoryMetrics{}
+
+	// Let's then range over the repositories fed to the struct
+	for _, y := range repos {
+
+		pulls, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		em = append(em, &RepositoryMetrics{
+			PullsCount: float64(len(pulls)),
+		})
+	}
+
+	return em
+}
+
 // gatherData - Collects the data from the API and stores into struct
-func (e *Exporter) gatherData() ([]*Datum, error) {
+// func (e *Exporter) gatherData(client *github.Client) ([]*RepositoryMetrics, *RateMetrics, error) {
 
-	data := []*Datum{}
+// 	opt := &github.RepositoryListByOrgOptions{
+// 		ListOptions: github.ListOptions{
+// 			Page:    1,
+// 			PerPage: 100,
+// 		},
+// 	}
 
-	responses, err := asyncHTTPGets(e.TargetURLs, e.APIToken)
+// 	repoMetrics := []*RepositoryMetrics{}
+// 	// x, y, err := client.Users.
+// 	// user, _, err := client.Organizations.ListMembers(context.Background(), "infinityworks", nil)
 
-	if err != nil {
-		return data, err
+// 	// // TODO pagination limits?
+// 	// fmt.Printf("Number of members: %d", len(user))
+
+// 	// client.Organizations.ListOrgMemberships()
+
+// 	repos, resp, err := client.Repositories.ListByOrg(context.Background(), "infinityworks", opt)
+// 	fmt.Printf("Size of repos: %d\n", len(repos))
+// 	if err != nil {
+// 		fmt.Printf("Error: %v", err)
+// 	}
+
+// 	rateMetrics := RateMetrics{
+// 		Limit:     float64(resp.Limit),
+// 		Remaining: float64(resp.Remaining),
+// 		Reset:     float64(resp.Reset.Unix()),
+// 	}
+
+// 	for _, y := range repos {
+
+// 		pulls, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
+// 		if err != nil {
+// 			fmt.Print(err)
+// 		}
+
+// 		repoMetrics = append(repoMetrics, &RepositoryMetrics{
+// 			Name:            *y.Name,
+// 			Owner:           *y.Owner.Login,
+// 			License:         y.License.GetKey(),
+// 			Language:        derefString(y.Language),
+// 			Archived:        *y.Archived,
+// 			Private:         *y.Private,
+// 			Fork:            *y.Fork,
+// 			ForksCount:      float64(*y.ForksCount),
+// 			StarsCount:      float64(*y.StargazersCount),
+// 			OpenIssuesCount: float64(*y.OpenIssuesCount),
+// 			WatchersCount:   float64(*y.WatchersCount),
+// 			Size:            float64(*y.Size),
+// 			PullsCount:      float64(len(pulls)),
+// 		})
+
+// 	}
+
+// 	// //return data, rates, err
+// 	return repoMetrics, &rateMetrics, nil
+
+// }
+
+func derefString(s *string) string {
+	if s != nil {
+		return *s
 	}
 
-	for _, response := range responses {
-
-		// Github can at times present an array, or an object for the same data set.
-		// This code checks handles this variation.
-		if isArray(response.body) {
-			ds := []*Datum{}
-			json.Unmarshal(response.body, &ds)
-			data = append(data, ds...)
-		} else {
-			d := new(Datum)
-
-			// Get releases
-			if strings.Contains(response.url, "/repos/") {
-				getReleases(e, response.url, &d.Releases)
-			}
-			// Get PRs
-			if strings.Contains(response.url, "/repos/") {
-				getPRs(e, response.url, &d.Pulls)
-			}
-			json.Unmarshal(response.body, &d)
-			data = append(data, d)
-		}
-
-		log.Infof("API data fetched for repository: %s", response.url)
-	}
-
-	//return data, rates, err
-	return data, nil
-
-}
-
-// getRates obtains the rate limit data for requests against the github API.
-// Especially useful when operating without oauth and the subsequent lower cap.
-func (e *Exporter) getRates() (*RateLimits, error) {
-
-	rateEndPoint := ("/rate_limit")
-	url := fmt.Sprintf("%s%s", e.APIURL, rateEndPoint)
-
-	resp, err := getHTTPResponse(url, e.APIToken)
-	if err != nil {
-		return &RateLimits{}, err
-	}
-	defer resp.Body.Close()
-
-	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
-	if resp.StatusCode == 404 {
-		return &RateLimits{}, fmt.Errorf("Rate Limiting not enabled in GitHub API")
-	}
-
-	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
-
-	if err != nil {
-		return &RateLimits{}, err
-	}
-
-	rem, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Remaining"), 64)
-
-	if err != nil {
-		return &RateLimits{}, err
-	}
-
-	reset, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Reset"), 64)
-
-	if err != nil {
-		return &RateLimits{}, err
-	}
-
-	return &RateLimits{
-		Limit:     limit,
-		Remaining: rem,
-		Reset:     reset,
-	}, err
-
-}
-
-func getReleases(e *Exporter, url string, data *[]Release) {
-	i := strings.Index(url, "?")
-	baseURL := url[:i]
-	releasesURL := baseURL + "/releases"
-	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.APIToken)
-
-	if err != nil {
-		log.Errorf("Unable to obtain releases from API, Error: %s", err)
-	}
-
-	json.Unmarshal(releasesResponse[0].body, &data)
-}
-
-func getPRs(e *Exporter, url string, data *[]Pull) {
-	i := strings.Index(url, "?")
-	baseURL := url[:i]
-	pullsURL := baseURL + "/pulls"
-	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken)
-
-	if err != nil {
-		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
-	}
-	fmt.Println(&data)
-
-	json.Unmarshal(pullsResponse[0].body, &data)
-}
-
-// isArray simply looks for key details that determine if the JSON response is an array or not.
-func isArray(body []byte) bool {
-
-	isArray := false
-
-	for _, c := range body {
-		if c == ' ' || c == '\t' || c == '\r' || c == '\n' {
-			continue
-		}
-		isArray = c == '['
-		break
-	}
-
-	return isArray
-
+	return ""
 }
