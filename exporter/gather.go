@@ -10,10 +10,10 @@ import (
 
 // newClient provides an authenticated Github
 // client for use in our API interactions
-func newClient() *github.Client {
+func (e *Exporter) newClient() *github.Client {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "61cda16368b55f394e3068571308739df3188392"},
+		&oauth2.Token{AccessToken: e.Config.APIToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 

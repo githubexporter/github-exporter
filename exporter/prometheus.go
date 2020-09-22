@@ -18,7 +18,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // This function is called when a scrape is peformed on the /metrics page
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
-	client := newClient()
+	client := e.newClient()
 
 	// Orgs
 	// TODO - What are we doing
