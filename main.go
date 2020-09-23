@@ -19,7 +19,7 @@ var (
 func init() {
 	applicationCfg = conf.Init()
 	mets = exporter.AddMetrics()
-	log = logger.Start(&applicationCfg)
+	log = logger.Start(applicationCfg.Config)
 }
 
 func main() {

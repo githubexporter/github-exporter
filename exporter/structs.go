@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	"github.com/google/go-github/github"
 	"github.com/infinityworks/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -12,13 +11,25 @@ import (
 type Exporter struct {
 	APIMetrics    map[string]*prometheus.Desc
 	Config        config.Config
-	Repositories  []*RepositoryMetrics
-	Organisations []*OrganisationMetrics
+	Repositories  []RepositoryMetrics
+	Organisations []OrganisationMetrics
 }
 
 type RepositoryMetrics struct {
-	Base       github.Repository
-	PullsCount float64
+	Name            string
+	Owner           string
+	Archived        string
+	Private         string
+	Fork            string
+	ForksCount      float64
+	WatchersCount   float64
+	StargazersCount float64
+	PullsCount      float64
+	OpenIssuesCount float64
+	Size            float64
+	Releases        float64
+	License         string
+	Language        string
 }
 
 type RateMetrics struct {

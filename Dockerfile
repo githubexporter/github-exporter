@@ -6,9 +6,13 @@ ENV GO111MODULE=on
 COPY ./ /go/src/github.com/infinityworks/github-exporter
 WORKDIR /go/src/github.com/infinityworks/github-exporter
 
-RUN go mod download \
-    # && go test ./... \
-    && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
+# RUN go mod download \
+#     # && go test ./... \
+#     && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
+
+
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/main
+
 
 FROM alpine:3.11.3
 
