@@ -22,21 +22,25 @@ type Exporter struct {
 // Also this includes the additional metrics we capture outside the standard return
 // from the github API
 type RepositoryMetrics struct {
-	Name            string
-	Owner           string
-	Archived        string
-	Private         string
-	Fork            string
-	ForksCount      float64
-	WatchersCount   float64
-	StargazersCount float64
-	PullsCount      float64
-	CommitsCount    float64
-	OpenIssuesCount float64
-	Size            float64
-	Releases        float64
-	License         string
-	Language        string
+	Name              string
+	Owner             string
+	Archived          string
+	Private           string
+	Fork              string
+	ForksCount        float64
+	WatchersCount     float64
+	StargazersCount   float64
+	OpenIssuesCount   float64
+	Size              float64
+	License           string
+	Language          string
+	AdditionalMetrics AdditionalMetrics
+}
+
+type AdditionalMetrics struct {
+	PullsCount   float64
+	CommitsCount float64
+	Releases     float64
 }
 
 // RateMetrics help us monitor performance against the

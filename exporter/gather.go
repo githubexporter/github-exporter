@@ -6,8 +6,45 @@ import (
 	"strings"
 
 	"github.com/google/go-github/github"
+	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/oauth2"
 )
+
+// Describe - loops through the API metrics and passes them to prometheus.Describe
+func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
+
+	for _, m := range e.APIMetrics {
+		ch <- m
+	}
+
+}
+
+// Collect function, called on by Prometheus Client library
+// This function is called when a scrape is peformed on the /metrics page
+func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+
+	e.Log.Info("Initialising capture of metrics")
+
+	client := e.newClient()
+
+	// Orgs
+	e.gatherByOrg(client)
+
+	// Users
+	e.gatherByUser(client)
+
+	// Explicit Repos
+	e.gatherByRepo(client)
+
+	// Rate
+	e.gatherRates(client)
+
+	// Set prometheus gauge metrics using the data gathered
+	e.processMetrics(ch)
+
+	e.Log.Info("All Metrics successfully collected")
+
+}
 
 // newClient provides an authenticated Github
 // client for use in our API interactions
@@ -47,11 +84,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 	}
 
 	// Requests are limited so we get as many objects per page as possible
-	opt := &github.RepositoryListByOrgOptions{
-		ListOptions: github.ListOptions{
-			PerPage: 100,
-		},
-	}
+	opt := &github.RepositoryListByOrgOptions{ListOptions: github.ListOptions{PerPage: 100}}
 
 	// Loop through the organizations
 	for _, y := range e.Config.Organisations {
@@ -78,7 +111,10 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		e.enrichMetrics(client, allRepos)
+		for _, y := range allRepos {
+			am := e.enrichMetrics(client, y)
+			e.stageMetrics(y, am)
+		}
 
 	}
 }
@@ -91,11 +127,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 		return
 	}
 
-	opt := &github.RepositoryListOptions{
-		ListOptions: github.ListOptions{
-			PerPage: 100,
-		},
-	}
+	opt := &github.RepositoryListOptions{ListOptions: github.ListOptions{PerPage: 100}}
 
 	// Loop through the Users passed in
 	for _, y := range e.Config.Users {
@@ -122,8 +154,10 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		e.enrichMetrics(client, allRepos)
-
+		for _, y := range allRepos {
+			am := e.enrichMetrics(client, y)
+			e.stageMetrics(y, am)
+		}
 	}
 }
 
@@ -135,11 +169,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 		return
 	}
 
-	opt := &github.RepositoryListOptions{
-		ListOptions: github.ListOptions{
-			PerPage: 100,
-		},
-	}
+	opt := &github.RepositoryListOptions{ListOptions: github.ListOptions{PerPage: 100}}
 
 	// Loop through the Users passed in
 	for _, y := range e.Config.Repositories {
@@ -173,8 +203,10 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		// Enrich the metrics
-		e.enrichMetrics(client, allRepos)
+		for _, y := range allRepos {
+			am := e.enrichMetrics(client, y)
+			e.stageMetrics(y, am)
+		}
 
 	}
 }
@@ -192,63 +224,66 @@ func (e *Exporter) metricEnabled(option string) bool {
 
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func (e *Exporter) enrichMetrics(client *github.Client, repos []*github.Repository) {
+func (e *Exporter) enrichMetrics(client *github.Client, repo *github.Repository) AdditionalMetrics {
 
-	// Let's then range over the repositories fed to the struct
-	for _, y := range repos {
-
-		// TODO Stage a better word?
-		// TODO - Fix pagination
-		pulls := 0.0
-		if e.metricEnabled("pulls") {
-			p, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
-			if err != nil {
-				e.Log.Errorf("Error obtaining pull metrics: %v", err)
-			}
-
-			pulls = float64(len(p))
+	// TODO Stage a better word?
+	// TODO - Fix pagination
+	pulls := 0.0
+	if e.metricEnabled("pulls") {
+		p, _, err := client.PullRequests.List(context.Background(), *repo.Owner.Login, *repo.Name, nil)
+		if err != nil {
+			e.Log.Errorf("Error obtaining pull metrics: %v", err)
 		}
 
-		// TODO - Fix pagination
-		releases := 0.0
-		if e.metricEnabled("releases") {
-			r, _, err := client.Repositories.ListReleases(context.Background(), *y.Owner.Login, *y.Name, nil)
-			if err != nil {
-				e.Log.Errorf("Error obtaining release metrics: %v", err)
-			}
+		pulls = float64(len(p))
+	}
 
-			releases = float64(len(r))
+	// TODO - Fix pagination
+	releases := 0.0
+	if e.metricEnabled("releases") {
+		r, _, err := client.Repositories.ListReleases(context.Background(), *repo.Owner.Login, *repo.Name, nil)
+		if err != nil {
+			e.Log.Errorf("Error obtaining release metrics: %v", err)
 		}
 
-		// TODO - Fix pagination
-		commits := 0.0
-		if e.metricEnabled("commits") {
-			c, _, err := client.Repositories.ListCommits(context.Background(), *y.Owner.Login, *y.Name, nil)
-			if err != nil {
-				e.Log.Errorf("Error obtaining commit metrics: %v", err)
-			}
-			releases = float64(len(c))
+		releases = float64(len(r))
+	}
 
+	// TODO - Fix pagination
+	commits := 0.0
+	if e.metricEnabled("commits") {
+		c, _, err := client.Repositories.ListCommits(context.Background(), *repo.Owner.Login, *repo.Name, nil)
+		if err != nil {
+			e.Log.Errorf("Error obtaining commit metrics: %v", err)
 		}
-
-		e.Repositories = append(e.Repositories, RepositoryMetrics{
-			Name:            e.derefString(y.Name),
-			Owner:           e.derefString(y.Owner.Login),
-			Archived:        strconv.FormatBool(e.derefBool(y.Archived)),
-			Private:         strconv.FormatBool(e.derefBool(y.Private)),
-			Fork:            strconv.FormatBool(e.derefBool(y.Fork)),
-			ForksCount:      float64(e.derefInt(y.ForksCount)),
-			WatchersCount:   float64(e.derefInt(y.WatchersCount)),
-			StargazersCount: float64(e.derefInt(y.StargazersCount)),
-			PullsCount:      pulls,
-			CommitsCount:    commits,
-			OpenIssuesCount: float64(e.derefInt(y.OpenIssuesCount)),
-			Size:            float64(e.derefInt(y.Size)),
-			Releases:        releases,
-			License:         y.License.GetKey(),
-			Language:        e.derefString(y.Language),
-		})
+		releases = float64(len(c))
 
 	}
+
+	return AdditionalMetrics{
+		PullsCount:   pulls,
+		CommitsCount: commits,
+		Releases:     releases,
+	}
+
+}
+
+func (e *Exporter) stageMetrics(repo *github.Repository, am AdditionalMetrics) {
+
+	e.Repositories = append(e.Repositories, RepositoryMetrics{
+		Name:              e.derefString(repo.Name),
+		Owner:             e.derefString(repo.Owner.Login),
+		Archived:          strconv.FormatBool(e.derefBool(repo.Archived)),
+		Private:           strconv.FormatBool(e.derefBool(repo.Private)),
+		Fork:              strconv.FormatBool(e.derefBool(repo.Fork)),
+		ForksCount:        float64(e.derefInt(repo.ForksCount)),
+		WatchersCount:     float64(e.derefInt(repo.WatchersCount)),
+		StargazersCount:   float64(e.derefInt(repo.StargazersCount)),
+		AdditionalMetrics: am,
+		OpenIssuesCount:   float64(e.derefInt(repo.OpenIssuesCount)),
+		Size:              float64(e.derefInt(repo.Size)),
+		License:           repo.License.GetKey(),
+		Language:          e.derefString(repo.Language),
+	})
 
 }
