@@ -21,9 +21,14 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Total number of open issues for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
-	APIMetrics["PullRequestCount"] = prometheus.NewDesc(
+	APIMetrics["PullRequests"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "pull_request_count"),
 		"Total number of pull requests for given repository",
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
+	)
+	APIMetrics["Commits"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "commit_count"),
+		"Total number of commits for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
@@ -111,15 +116,17 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) error {
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Forks"], prometheus.GaugeValue, x.ForksCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, x.WatchersCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, x.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequests"], prometheus.GaugeValue, x.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssuesCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Releases"], prometheus.GaugeValue, x.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Commits"], prometheus.GaugeValue, x.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+
 	}
 
 	// Set Rate limit stats
-	// ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, rate.Limit)
-	// ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, rate.Remaining)
-	// ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, rate.Reset)
+	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, e.RateLimits.Limit)
+	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, e.RateLimits.Remaining)
+	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, e.RateLimits.Reset)
 
 	return nil
 }

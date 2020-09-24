@@ -22,6 +22,18 @@ func (e *Exporter) newClient() *github.Client {
 	return github.NewClient(tc)
 }
 
+func (e *Exporter) gatherRates(client *github.Client) {
+	limits, _, err := client.RateLimits(context.Background())
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+	}
+
+	e.RateLimits.Limit = float64(limits.Core.Limit)
+	e.RateLimits.Remaining = float64(limits.Core.Remaining)
+	e.RateLimits.Reset = float64(limits.Core.Reset.Unix())
+
+}
+
 func (e *Exporter) gatherByOrg(client *github.Client) {
 
 	// Only execute if these have been defined
@@ -30,29 +42,39 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 		return
 	}
 
+	// Requests are limited so we get as many objects per page as possible
 	opt := &github.RepositoryListByOrgOptions{
 		ListOptions: github.ListOptions{
-			Page:    1,
-			PerPage: 10,
+			PerPage: 100,
 		},
 	}
 
-	// Loop through the organizations passed in
+	// Loop through the organizations
 	for _, y := range e.Config.Organisations {
 
 		// Skip any undefined orgs
 		if y == "" {
 			continue
 		}
+
 		println("Gathering metrics for ", y)
-		// collect basic repository information for the org
-		repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, opt)
-		if err != nil {
-			fmt.Printf("Error: %v", err)
+
+		// Support pagination
+		var allRepos []*github.Repository
+
+		for {
+			repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, opt)
+			if err != nil {
+				fmt.Printf("Error: %v", err)
+			}
+			allRepos = append(allRepos, repos...)
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
 		}
 
-		em := enrichMetrics(client, repos)
-		println("Remaining requests...", resp.Remaining)
+		em := enrichMetrics(client, allRepos)
 
 		e.Repositories = append(e.Repositories, em...)
 	}
@@ -68,8 +90,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 
 	opt := &github.RepositoryListOptions{
 		ListOptions: github.ListOptions{
-			Page:    1,
-			PerPage: 10,
+			PerPage: 100,
 		},
 	}
 
@@ -82,14 +103,23 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 		}
 
 		println("Gathering metrics for ", y)
-		// collect basic repository information for the org
-		repos, resp, err := client.Repositories.List(context.Background(), y, opt)
-		if err != nil {
-			fmt.Printf("Error: %v", err)
+
+		// Support pagination
+		var allRepos []*github.Repository
+
+		for {
+			repos, resp, err := client.Repositories.List(context.Background(), y, opt)
+			if err != nil {
+				fmt.Printf("Error: %v", err)
+			}
+			allRepos = append(allRepos, repos...)
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
 		}
 
-		em := enrichMetrics(client, repos)
-		println("Remaining requests...", resp.Remaining)
+		em := enrichMetrics(client, allRepos)
 
 		e.Repositories = append(e.Repositories, em...)
 	}
@@ -101,6 +131,12 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 	if len(e.Config.Repositories) == 0 {
 		println("No individual repositories specified, skipping collection")
 		return
+	}
+
+	opt := &github.RepositoryListOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 100,
+		},
 	}
 
 	// Loop through the Users passed in
@@ -117,20 +153,26 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 		repo := parts[1]
 
 		println("Gathering metrics for ", y)
-		// collect basic repository information for the repo
-		metrics, resp, err := client.Repositories.Get(context.Background(), owner, repo)
-		if err != nil {
-			fmt.Printf("Error: %v", err)
+
+		// Support pagination
+		var allRepos []*github.Repository
+
+		for {
+			// collect basic repository information for the repo
+			metrics, resp, err := client.Repositories.Get(context.Background(), owner, repo)
+			if err != nil {
+				fmt.Printf("Error: %v", err)
+			}
+
+			allRepos = append(allRepos, metrics)
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
 		}
 
-		// append to an empty array to better integrate with other functions
-		repos := []*github.Repository{}
-		repos = append(repos, metrics)
-
 		// Enrich the metrics
-		em := enrichMetrics(client, repos)
-
-		println("Remaining requests...", resp.Remaining)
+		em := enrichMetrics(client, allRepos)
 
 		e.Repositories = append(e.Repositories, em...)
 	}
@@ -146,12 +188,20 @@ func enrichMetrics(client *github.Client, repos []*github.Repository) []Reposito
 	// Let's then range over the repositories fed to the struct
 	for _, y := range repos {
 
+		// TODO - Fix pagination
 		pulls, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
 		if err != nil {
 			fmt.Print(err)
 		}
 
+		// TODO - Fix pagination
 		releases, _, err := client.Repositories.ListReleases(context.Background(), *y.Owner.Login, *y.Name, nil)
+		if err != nil {
+			fmt.Print(err)
+		}
+
+		// TODO - Fix pagination
+		commits, _, err := client.Repositories.ListCommits(context.Background(), *y.Owner.Login, *y.Name, nil)
 		if err != nil {
 			fmt.Print(err)
 		}
@@ -166,6 +216,7 @@ func enrichMetrics(client *github.Client, repos []*github.Repository) []Reposito
 			WatchersCount:   float64(derefInt(y.WatchersCount)),
 			StargazersCount: float64(derefInt(y.StargazersCount)),
 			PullsCount:      float64(len(pulls)),
+			CommitsCount:    float64(len(commits)),
 			OpenIssuesCount: float64(derefInt(y.OpenIssuesCount)),
 			Size:            float64(derefInt(y.Size)),
 			Releases:        float64(len(releases)),

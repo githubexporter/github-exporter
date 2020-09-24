@@ -9,10 +9,10 @@ import (
 // This is done so that the relevant functions have easy access to the
 // user defined runtime configuration when the Collect method is called.
 type Exporter struct {
-	APIMetrics    map[string]*prometheus.Desc
-	Config        config.Config
-	Repositories  []RepositoryMetrics
-	Organisations []OrganisationMetrics
+	APIMetrics   map[string]*prometheus.Desc
+	Config       config.Config
+	Repositories []RepositoryMetrics
+	RateLimits   RateMetrics
 }
 
 type RepositoryMetrics struct {
@@ -25,6 +25,7 @@ type RepositoryMetrics struct {
 	WatchersCount   float64
 	StargazersCount float64
 	PullsCount      float64
+	CommitsCount    float64
 	OpenIssuesCount float64
 	Size            float64
 	Releases        float64
