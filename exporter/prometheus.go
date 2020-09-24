@@ -34,12 +34,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.gatherRates(client)
 
 	// Set prometheus gauge metrics using the data gathered
-	err := e.processMetrics(ch)
-
-	if err != nil {
-		e.Log.Error("Error Processing Metrics", err)
-		return
-	}
+	e.processMetrics(ch)
 
 	e.Log.Info("All Metrics successfully collected")
 

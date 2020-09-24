@@ -13,14 +13,15 @@ import (
 
 // Config struct holds all of the runtime confgiguration for the application
 type Config struct {
-	Config        *cfg.BaseConfig
-	APIURL        string
-	Repositories  []string
-	Organisations []string
-	Users         []string
-	APITokenEnv   string
-	APITokenFile  string
-	APIToken      string
+	Config            *cfg.BaseConfig
+	APIURL            string
+	Repositories      []string
+	Organisations     []string
+	Users             []string
+	APITokenEnv       string
+	APITokenFile      string
+	APIToken          string
+	AdditionalMetrics []string
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -36,14 +37,15 @@ func Init() Config {
 	}
 
 	appConfig := Config{
-		Config:        &ac,
-		APIURL:        cfg.GetEnv("API_URL", "https://api.github.com"),
-		Repositories:  strings.Split(os.Getenv("REPOS"), ","),
-		Organisations: strings.Split(os.Getenv("ORGS"), ","),
-		Users:         strings.Split(os.Getenv("USERS"), ","),
-		APITokenEnv:   os.Getenv("GITHUB_TOKEN"),
-		APITokenFile:  tokenFile,
-		APIToken:      token,
+		Config:            &ac,
+		APIURL:            cfg.GetEnv("API_URL", "https://api.github.com"),
+		Repositories:      strings.Split(os.Getenv("REPOS"), ","),
+		Organisations:     strings.Split(os.Getenv("ORGS"), ","),
+		Users:             strings.Split(os.Getenv("USERS"), ","),
+		APITokenEnv:       os.Getenv("GITHUB_TOKEN"),
+		APITokenFile:      tokenFile,
+		APIToken:          token,
+		AdditionalMetrics: strings.Split(os.Getenv("ADDITIONAL_METRICS"), ","),
 	}
 
 	return appConfig

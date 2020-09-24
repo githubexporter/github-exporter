@@ -78,9 +78,8 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		em := e.enrichMetrics(client, allRepos)
+		e.enrichMetrics(client, allRepos)
 
-		e.Repositories = append(e.Repositories, em...)
 	}
 }
 
@@ -123,9 +122,8 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		em := e.enrichMetrics(client, allRepos)
+		e.enrichMetrics(client, allRepos)
 
-		e.Repositories = append(e.Repositories, em...)
 	}
 }
 
@@ -176,41 +174,64 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 		}
 
 		// Enrich the metrics
-		em := e.enrichMetrics(client, allRepos)
+		e.enrichMetrics(client, allRepos)
 
-		e.Repositories = append(e.Repositories, em...)
 	}
+}
+
+func (e *Exporter) metricEnabled(option string) bool {
+
+	for _, v := range e.Config.AdditionalMetrics {
+		if v == option {
+			return true
+		}
+	}
+
+	return false
 }
 
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func (e *Exporter) enrichMetrics(client *github.Client, repos []*github.Repository) []RepositoryMetrics {
-
-	// First, let's create an empty struct we can return
-	em := []RepositoryMetrics{}
+func (e *Exporter) enrichMetrics(client *github.Client, repos []*github.Repository) {
 
 	// Let's then range over the repositories fed to the struct
 	for _, y := range repos {
 
+		// TODO Stage a better word?
 		// TODO - Fix pagination
-		pulls, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
-		if err != nil {
-			e.Log.Errorf("Error obtaining pull metrics: %v", err)
+		pulls := 0.0
+		if e.metricEnabled("pulls") {
+			p, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
+			if err != nil {
+				e.Log.Errorf("Error obtaining pull metrics: %v", err)
+			}
+
+			pulls = float64(len(p))
 		}
 
 		// TODO - Fix pagination
-		releases, _, err := client.Repositories.ListReleases(context.Background(), *y.Owner.Login, *y.Name, nil)
-		if err != nil {
-			e.Log.Errorf("Error obtaining release metrics: %v", err)
+		releases := 0.0
+		if e.metricEnabled("releases") {
+			r, _, err := client.Repositories.ListReleases(context.Background(), *y.Owner.Login, *y.Name, nil)
+			if err != nil {
+				e.Log.Errorf("Error obtaining release metrics: %v", err)
+			}
+
+			releases = float64(len(r))
 		}
 
 		// TODO - Fix pagination
-		commits, _, err := client.Repositories.ListCommits(context.Background(), *y.Owner.Login, *y.Name, nil)
-		if err != nil {
-			e.Log.Errorf("Error obtaining commit metrics: %v", err)
+		commits := 0.0
+		if e.metricEnabled("commits") {
+			c, _, err := client.Repositories.ListCommits(context.Background(), *y.Owner.Login, *y.Name, nil)
+			if err != nil {
+				e.Log.Errorf("Error obtaining commit metrics: %v", err)
+			}
+			releases = float64(len(c))
+
 		}
 
-		em = append(em, RepositoryMetrics{
+		e.Repositories = append(e.Repositories, RepositoryMetrics{
 			Name:            e.derefString(y.Name),
 			Owner:           e.derefString(y.Owner.Login),
 			Archived:        strconv.FormatBool(e.derefBool(y.Archived)),
@@ -219,15 +240,15 @@ func (e *Exporter) enrichMetrics(client *github.Client, repos []*github.Reposito
 			ForksCount:      float64(e.derefInt(y.ForksCount)),
 			WatchersCount:   float64(e.derefInt(y.WatchersCount)),
 			StargazersCount: float64(e.derefInt(y.StargazersCount)),
-			PullsCount:      float64(len(pulls)),
-			CommitsCount:    float64(len(commits)),
+			PullsCount:      pulls,
+			CommitsCount:    commits,
 			OpenIssuesCount: float64(e.derefInt(y.OpenIssuesCount)),
 			Size:            float64(e.derefInt(y.Size)),
-			Releases:        float64(len(releases)),
+			Releases:        releases,
 			License:         y.License.GetKey(),
 			Language:        e.derefString(y.Language),
 		})
+
 	}
 
-	return em
 }
