@@ -1,8 +1,6 @@
 package exporter
 
 import (
-	"fmt"
-
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -75,7 +73,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	return APIMetrics
 }
 
-func derefString(s *string) string {
+func (e *Exporter) derefString(s *string) string {
 
 	if s != nil {
 		return *s
@@ -84,24 +82,24 @@ func derefString(s *string) string {
 	return ""
 }
 
-func derefBool(b *bool) bool {
+func (e *Exporter) derefBool(b *bool) bool {
 
 	if b != nil {
 		return *b
 	}
 
-	fmt.Println("Bool nil, defaulting to false")
+	e.Log.Info("Bool nil, defaulting to false")
 
 	return false
 }
 
-func derefInt(i *int) int {
+func (e *Exporter) derefInt(i *int) int {
 
 	if i != nil {
 		return *i
 	}
 
-	fmt.Println("Int nil, defaulting to 0")
+	e.Log.Info("Int nil, defaulting to 0")
 
 	return 0
 

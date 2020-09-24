@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	"github.com/infinityworks/go-common/logger"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -17,13 +16,10 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 // Collect function, called on by Prometheus Client library
 // This function is called when a scrape is peformed on the /metrics page
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	log := logger.Start(e.Config.Config)
-	log.Info("Gathering Metrics")
+
+	e.Log.Info("Initialising capture of metrics")
 
 	client := e.newClient()
-
-	// Rate
-	e.gatherRates(client)
 
 	// Orgs
 	e.gatherByOrg(client)
@@ -34,14 +30,17 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	// Explicit Repos
 	e.gatherByRepo(client)
 
+	// Rate
+	e.gatherRates(client)
+
 	// Set prometheus gauge metrics using the data gathered
 	err := e.processMetrics(ch)
 
 	if err != nil {
-		log.Error("Error Processing Metrics", err)
+		e.Log.Error("Error Processing Metrics", err)
 		return
 	}
 
-	log.Info("All Metrics successfully collected")
+	e.Log.Info("All Metrics successfully collected")
 
 }

@@ -2,7 +2,6 @@ package exporter
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -22,23 +21,28 @@ func (e *Exporter) newClient() *github.Client {
 	return github.NewClient(tc)
 }
 
+// GatherRates returns the GitHub API rate limits
+// A free call that doesn't count towards your usage
 func (e *Exporter) gatherRates(client *github.Client) {
 	limits, _, err := client.RateLimits(context.Background())
 	if err != nil {
-		fmt.Printf("Error: %v", err)
+		e.Log.Errorf("Error gathering API Rate limits: %v", err)
 	}
 
 	e.RateLimits.Limit = float64(limits.Core.Limit)
 	e.RateLimits.Remaining = float64(limits.Core.Remaining)
 	e.RateLimits.Reset = float64(limits.Core.Reset.Unix())
 
+	if e.RateLimits.Remaining == 0 {
+		e.Log.Errorf("Error - Github API Rate limit exceeded, review rates and usage")
+	}
 }
 
 func (e *Exporter) gatherByOrg(client *github.Client) {
 
 	// Only execute if these have been defined
 	if len(e.Config.Organisations) == 0 {
-		println("No Organisations specified, skipping collection")
+		e.Log.Info("No Organisations specified, skipping collection")
 		return
 	}
 
@@ -57,7 +61,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 			continue
 		}
 
-		println("Gathering metrics for ", y)
+		e.Log.Infof("Gathering metrics for GitHub Org %s", y)
 
 		// Support pagination
 		var allRepos []*github.Repository
@@ -65,7 +69,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 		for {
 			repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, opt)
 			if err != nil {
-				fmt.Printf("Error: %v", err)
+				e.Log.Errorf("Error listing repositories by org: %v", err)
 			}
 			allRepos = append(allRepos, repos...)
 			if resp.NextPage == 0 {
@@ -74,7 +78,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		em := enrichMetrics(client, allRepos)
+		em := e.enrichMetrics(client, allRepos)
 
 		e.Repositories = append(e.Repositories, em...)
 	}
@@ -84,7 +88,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 
 	// Only execute if these have been defined
 	if len(e.Config.Users) == 0 {
-		println("No Users specified, skipping collection")
+		e.Log.Info("No Users specified, skipping collection")
 		return
 	}
 
@@ -102,7 +106,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 			continue
 		}
 
-		println("Gathering metrics for ", y)
+		e.Log.Info("Gathering metrics for GitHub User ", y)
 
 		// Support pagination
 		var allRepos []*github.Repository
@@ -110,7 +114,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 		for {
 			repos, resp, err := client.Repositories.List(context.Background(), y, opt)
 			if err != nil {
-				fmt.Printf("Error: %v", err)
+				e.Log.Errorf("Error listing repositories by user: %v", err)
 			}
 			allRepos = append(allRepos, repos...)
 			if resp.NextPage == 0 {
@@ -119,7 +123,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 			opt.Page = resp.NextPage
 		}
 
-		em := enrichMetrics(client, allRepos)
+		em := e.enrichMetrics(client, allRepos)
 
 		e.Repositories = append(e.Repositories, em...)
 	}
@@ -129,7 +133,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 
 	// Only execute if these have been defined
 	if len(e.Config.Repositories) == 0 {
-		println("No individual repositories specified, skipping collection")
+		e.Log.Info("No individual repositories specified, skipping collection")
 		return
 	}
 
@@ -152,7 +156,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 		owner := parts[0]
 		repo := parts[1]
 
-		println("Gathering metrics for ", y)
+		e.Log.Infof("Gathering metrics for GitHub Repo %s", y)
 
 		// Support pagination
 		var allRepos []*github.Repository
@@ -161,7 +165,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 			// collect basic repository information for the repo
 			metrics, resp, err := client.Repositories.Get(context.Background(), owner, repo)
 			if err != nil {
-				fmt.Printf("Error: %v", err)
+				e.Log.Errorf("Error collecting repository metrics: %v", err)
 			}
 
 			allRepos = append(allRepos, metrics)
@@ -172,7 +176,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 		}
 
 		// Enrich the metrics
-		em := enrichMetrics(client, allRepos)
+		em := e.enrichMetrics(client, allRepos)
 
 		e.Repositories = append(e.Repositories, em...)
 	}
@@ -180,7 +184,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func enrichMetrics(client *github.Client, repos []*github.Repository) []RepositoryMetrics {
+func (e *Exporter) enrichMetrics(client *github.Client, repos []*github.Repository) []RepositoryMetrics {
 
 	// First, let's create an empty struct we can return
 	em := []RepositoryMetrics{}
@@ -191,37 +195,37 @@ func enrichMetrics(client *github.Client, repos []*github.Repository) []Reposito
 		// TODO - Fix pagination
 		pulls, _, err := client.PullRequests.List(context.Background(), *y.Owner.Login, *y.Name, nil)
 		if err != nil {
-			fmt.Print(err)
+			e.Log.Errorf("Error obtaining pull metrics: %v", err)
 		}
 
 		// TODO - Fix pagination
 		releases, _, err := client.Repositories.ListReleases(context.Background(), *y.Owner.Login, *y.Name, nil)
 		if err != nil {
-			fmt.Print(err)
+			e.Log.Errorf("Error obtaining release metrics: %v", err)
 		}
 
 		// TODO - Fix pagination
 		commits, _, err := client.Repositories.ListCommits(context.Background(), *y.Owner.Login, *y.Name, nil)
 		if err != nil {
-			fmt.Print(err)
+			e.Log.Errorf("Error obtaining commit metrics: %v", err)
 		}
 
 		em = append(em, RepositoryMetrics{
-			Name:            derefString(y.Name),
-			Owner:           derefString(y.Owner.Login),
-			Archived:        strconv.FormatBool(derefBool(y.Archived)),
-			Private:         strconv.FormatBool(derefBool(y.Private)),
-			Fork:            strconv.FormatBool(derefBool(y.Fork)),
-			ForksCount:      float64(derefInt(y.ForksCount)),
-			WatchersCount:   float64(derefInt(y.WatchersCount)),
-			StargazersCount: float64(derefInt(y.StargazersCount)),
+			Name:            e.derefString(y.Name),
+			Owner:           e.derefString(y.Owner.Login),
+			Archived:        strconv.FormatBool(e.derefBool(y.Archived)),
+			Private:         strconv.FormatBool(e.derefBool(y.Private)),
+			Fork:            strconv.FormatBool(e.derefBool(y.Fork)),
+			ForksCount:      float64(e.derefInt(y.ForksCount)),
+			WatchersCount:   float64(e.derefInt(y.WatchersCount)),
+			StargazersCount: float64(e.derefInt(y.StargazersCount)),
 			PullsCount:      float64(len(pulls)),
 			CommitsCount:    float64(len(commits)),
-			OpenIssuesCount: float64(derefInt(y.OpenIssuesCount)),
-			Size:            float64(derefInt(y.Size)),
+			OpenIssuesCount: float64(e.derefInt(y.OpenIssuesCount)),
+			Size:            float64(e.derefInt(y.Size)),
 			Releases:        float64(len(releases)),
 			License:         y.License.GetKey(),
-			Language:        derefString(y.Language),
+			Language:        e.derefString(y.Language),
 		})
 	}
 

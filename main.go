@@ -28,6 +28,7 @@ func main() {
 	exp := exporter.Exporter{
 		APIMetrics: mets,
 		Config:     applicationCfg,
+		Log:        log,
 	}
 
 	http.NewServer(exp).Start()
