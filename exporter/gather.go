@@ -83,9 +83,6 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 		return
 	}
 
-	// Requests are limited so we get as many objects per page as possible
-	opt := &github.RepositoryListByOrgOptions{ListOptions: github.ListOptions{PerPage: 100}}
-
 	// Loop through the organizations
 	for _, y := range e.Config.Organisations {
 
@@ -98,10 +95,11 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 
 		// Support pagination
 		var allRepos []*github.Repository
+		repoOpts := &github.RepositoryListByOrgOptions{ListOptions: github.ListOptions{PerPage: 100}}
 
 		for {
 
-			repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, opt)
+			repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, repoOpts)
 			if err != nil {
 				e.Log.Errorf("Error listing repositories by org: %v", err)
 			}
@@ -109,23 +107,88 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 			if resp.NextPage == 0 {
 				break
 			}
-			opt.Page = resp.NextPage
+			repoOpts.Page = resp.NextPage
 		}
 
-		for _, y := range allRepos {
+		// Support pagination
+		var allMembers []*github.User
 
-			if e.isDuplicate(e.ProcessedRepos, *y.Name, y.Owner.GetLogin()) {
+		memberOpts := &github.ListMembersOptions{ListOptions: github.ListOptions{PerPage: 100}}
+
+		for {
+
+			members, resp, err := client.Organizations.ListMembers(context.Background(), y, memberOpts)
+			if err != nil {
+				e.Log.Errorf("Error listing members by org: %v", err)
+			}
+
+			e.Log.Infof("First Page: %d\n Next Page %d\n Last Page %d\n  ", resp.FirstPage, resp.NextPage, resp.LastPage)
+			e.Log.Infof("Number in return %d", len(members))
+			allMembers = append(allMembers, members...)
+			if resp.NextPage == 0 {
+				break
+			}
+
+			memberOpts.Page = resp.NextPage
+		}
+
+		// Support pagination
+		var allCollabs []*github.User
+
+		collabOpts := &github.ListOutsideCollaboratorsOptions{ListOptions: github.ListOptions{PerPage: 100}}
+
+		for {
+
+			collabs, resp, err := client.Organizations.ListOutsideCollaborators(context.Background(), y, collabOpts)
+			if err != nil {
+				e.Log.Errorf("Error listing members by org: %v", err)
+			}
+			allCollabs = append(allCollabs, collabs...)
+			if resp.NextPage == 0 {
+				break
+			}
+			collabOpts.Page = resp.NextPage
+		}
+
+		// Support pagination
+		var allInvites []*github.Invitation
+
+		inviteOpts := &github.ListOptions{PerPage: 100}
+
+		for {
+
+			invites, resp, err := client.Organizations.ListPendingOrgInvitations(context.Background(), y, inviteOpts)
+			if err != nil {
+				e.Log.Errorf("Error listing members by org: %v", err)
+			}
+			allInvites = append(allInvites, invites...)
+			if resp.NextPage == 0 {
+				break
+			}
+			inviteOpts.Page = resp.NextPage
+		}
+
+		for _, r := range allRepos {
+
+			if e.isDuplicate(e.ProcessedRepos, *r.Name, r.Owner.GetLogin()) {
 				continue
 			}
 
-			am := e.enrichMetrics(client, y)
-			e.stageMetrics(y, am)
+			am := e.enrichMetrics(client, r)
+			e.stageMetrics(r, am)
 
 			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
-				Owner: y.Owner.GetLogin(),
-				Name:  *y.Name,
+				Owner: r.Owner.GetLogin(),
+				Name:  *r.Name,
 			})
 		}
+
+		e.Organisations = append(e.Organisations, OrganisationMetrics{
+			Name:                       y,
+			MembersCount:               float64(len(allMembers)),
+			OutsideCollaboratorsCount:  float64(len(allCollabs)),
+			PendingOrgInvitationsCount: float64(len(allInvites)),
+		})
 
 	}
 }
@@ -259,7 +322,7 @@ func (e *Exporter) isDuplicate(repos []ProcessedRepos, r, o string) bool {
 
 	for _, n := range repos {
 		if r == n.Name && o == n.Owner {
-			e.Log.Infof("Duplicate collection detected for %s/%s", r, o)
+			e.Log.Infof("Duplicate collection detected for %s/%s", o, r)
 			return true
 		}
 	}

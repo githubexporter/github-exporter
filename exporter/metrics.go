@@ -54,6 +54,21 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Number of releases for a repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
+	APIMetrics["MembersCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "org", "members"),
+		"Number of members in an organisation",
+		[]string{"organisation"}, nil,
+	)
+	APIMetrics["OutsideCollaboratorsCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "org", "collaborators"),
+		"Number outside collaborators in an organisation",
+		[]string{"organisation"}, nil,
+	)
+	APIMetrics["PendingOrgInvitationsCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "org", "pending_invitations"),
+		"Number of pending invitations",
+		[]string{"organisation"}, nil,
+	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
 		"Number of API queries allowed in a 60 minute window",
@@ -127,6 +142,15 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 		}
 	}
 
+	if len(e.Organisations) > 0 {
+		for _, y := range e.Organisations {
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["MembersCount"], prometheus.GaugeValue, y.MembersCount, y.Name)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["OutsideCollaboratorsCount"], prometheus.GaugeValue, y.OutsideCollaboratorsCount, y.Name)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["PendingOrgInvitationsCount"], prometheus.GaugeValue, y.PendingOrgInvitationsCount, y.Name)
+		}
+
+	}
+
 	// Set Rate limit stats
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, e.RateLimits.Limit)
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, e.RateLimits.Remaining)
@@ -135,5 +159,6 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 	// Clear Exporter, avoids multiple captures
 	e.Repositories = nil
 	e.ProcessedRepos = nil
+	e.Organisations = nil
 
 }

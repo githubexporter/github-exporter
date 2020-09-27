@@ -15,6 +15,7 @@ type Exporter struct {
 	Log            *logrus.Logger
 	Repositories   []RepositoryMetrics
 	ProcessedRepos []ProcessedRepos
+	Organisations  []OrganisationMetrics
 	RateLimits     RateMetrics
 }
 
@@ -58,9 +59,10 @@ type RateMetrics struct {
 // OrganisationMetrics helps us capture metrics specific to our organisations
 // We simply miss when focussing in on repositories alone
 type OrganisationMetrics struct {
-	TotalMemberCount   float64
-	ActiveMemberCount  float64
-	PendingMemberCount float64
+	Name                       string
+	MembersCount               float64
+	OutsideCollaboratorsCount  float64
+	PendingOrgInvitationsCount float64
 }
 
 // ProcessedRepos is used to help track and avoid duplicate repository collection of metrics
