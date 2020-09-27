@@ -100,6 +100,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 		var allRepos []*github.Repository
 
 		for {
+
 			repos, resp, err := client.Repositories.ListByOrg(context.Background(), y, opt)
 			if err != nil {
 				e.Log.Errorf("Error listing repositories by org: %v", err)
@@ -112,8 +113,18 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 		}
 
 		for _, y := range allRepos {
+
+			if e.isDuplicate(e.ProcessedRepos, *y.Name, y.Owner.GetLogin()) {
+				continue
+			}
+
 			am := e.enrichMetrics(client, y)
 			e.stageMetrics(y, am)
+
+			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
+				Owner: y.Owner.GetLogin(),
+				Name:  *y.Name,
+			})
 		}
 
 	}
@@ -155,8 +166,18 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 		}
 
 		for _, y := range allRepos {
+
+			if e.isDuplicate(e.ProcessedRepos, *y.Name, y.Owner.GetLogin()) {
+				continue
+			}
+
 			am := e.enrichMetrics(client, y)
 			e.stageMetrics(y, am)
+
+			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
+				Owner: y.Owner.GetLogin(),
+				Name:  *y.Name,
+			})
 		}
 	}
 }
@@ -204,8 +225,18 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 		}
 
 		for _, y := range allRepos {
+
+			if e.isDuplicate(e.ProcessedRepos, *y.Name, y.Owner.GetLogin()) {
+				continue
+			}
+
 			am := e.enrichMetrics(client, y)
 			e.stageMetrics(y, am)
+
+			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
+				Owner: y.Owner.GetLogin(),
+				Name:  *y.Name,
+			})
 		}
 
 	}
@@ -213,7 +244,7 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 
 func (e *Exporter) metricEnabled(option string) bool {
 
-	for _, v := range e.Config.AdditionalMetrics {
+	for _, v := range e.Config.EnhancedMetrics {
 		if v == option {
 			return true
 		}
@@ -222,9 +253,23 @@ func (e *Exporter) metricEnabled(option string) bool {
 	return false
 }
 
+// isDuplicate provides protection from collecting the same metrics twice
+// Doing so causes error in the prometheus SDK
+func (e *Exporter) isDuplicate(repos []ProcessedRepos, r, o string) bool {
+
+	for _, n := range repos {
+		if r == n.Name && o == n.Owner {
+			e.Log.Infof("Duplicate collection detected for %s/%s", r, o)
+			return true
+		}
+	}
+	return false
+
+}
+
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func (e *Exporter) enrichMetrics(client *github.Client, repo *github.Repository) AdditionalMetrics {
+func (e *Exporter) enrichMetrics(client *github.Client, repo *github.Repository) EnhancedMetrics {
 
 	// TODO Stage a better word?
 	// TODO - Fix pagination
@@ -260,7 +305,7 @@ func (e *Exporter) enrichMetrics(client *github.Client, repo *github.Repository)
 
 	}
 
-	return AdditionalMetrics{
+	return EnhancedMetrics{
 		PullsCount:   pulls,
 		CommitsCount: commits,
 		Releases:     releases,
@@ -268,22 +313,22 @@ func (e *Exporter) enrichMetrics(client *github.Client, repo *github.Repository)
 
 }
 
-func (e *Exporter) stageMetrics(repo *github.Repository, am AdditionalMetrics) {
+func (e *Exporter) stageMetrics(repo *github.Repository, am EnhancedMetrics) {
 
 	e.Repositories = append(e.Repositories, RepositoryMetrics{
-		Name:              e.derefString(repo.Name),
-		Owner:             e.derefString(repo.Owner.Login),
-		Archived:          strconv.FormatBool(e.derefBool(repo.Archived)),
-		Private:           strconv.FormatBool(e.derefBool(repo.Private)),
-		Fork:              strconv.FormatBool(e.derefBool(repo.Fork)),
-		ForksCount:        float64(e.derefInt(repo.ForksCount)),
-		WatchersCount:     float64(e.derefInt(repo.WatchersCount)),
-		StargazersCount:   float64(e.derefInt(repo.StargazersCount)),
-		AdditionalMetrics: am,
-		OpenIssuesCount:   float64(e.derefInt(repo.OpenIssuesCount)),
-		Size:              float64(e.derefInt(repo.Size)),
-		License:           repo.License.GetKey(),
-		Language:          e.derefString(repo.Language),
+		Name:            e.derefString(repo.Name),
+		Owner:           e.derefString(repo.Owner.Login),
+		Archived:        strconv.FormatBool(e.derefBool(repo.Archived)),
+		Private:         strconv.FormatBool(e.derefBool(repo.Private)),
+		Fork:            strconv.FormatBool(e.derefBool(repo.Fork)),
+		ForksCount:      float64(e.derefInt(repo.ForksCount)),
+		WatchersCount:   float64(e.derefInt(repo.WatchersCount)),
+		StargazersCount: float64(e.derefInt(repo.StargazersCount)),
+		EnhancedMetrics: am,
+		OpenIssuesCount: float64(e.derefInt(repo.OpenIssuesCount)),
+		Size:            float64(e.derefInt(repo.Size)),
+		License:         repo.License.GetKey(),
+		Language:        e.derefString(repo.Language),
 	})
 
 }

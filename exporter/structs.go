@@ -10,11 +10,12 @@ import (
 // This is done so that the relevant functions have easy access to the
 // user defined runtime configuration when the Collect method is called.
 type Exporter struct {
-	APIMetrics   map[string]*prometheus.Desc
-	Config       config.Config
-	Log          *logrus.Logger
-	Repositories []RepositoryMetrics
-	RateLimits   RateMetrics
+	APIMetrics     map[string]*prometheus.Desc
+	Config         config.Config
+	Log            *logrus.Logger
+	Repositories   []RepositoryMetrics
+	ProcessedRepos []ProcessedRepos
+	RateLimits     RateMetrics
 }
 
 // RepositoryMetrics defines our repository metric footprint
@@ -22,22 +23,25 @@ type Exporter struct {
 // Also this includes the additional metrics we capture outside the standard return
 // from the github API
 type RepositoryMetrics struct {
-	Name              string
-	Owner             string
-	Archived          string
-	Private           string
-	Fork              string
-	ForksCount        float64
-	WatchersCount     float64
-	StargazersCount   float64
-	OpenIssuesCount   float64
-	Size              float64
-	License           string
-	Language          string
-	AdditionalMetrics AdditionalMetrics
+	Name            string
+	Owner           string
+	Archived        string
+	Private         string
+	Fork            string
+	ForksCount      float64
+	WatchersCount   float64
+	StargazersCount float64
+	OpenIssuesCount float64
+	Size            float64
+	License         string
+	Language        string
+	EnhancedMetrics EnhancedMetrics
 }
 
-type AdditionalMetrics struct {
+// EnhancedMetrics is used to track metrics not available through
+// standard api endpoints in the v3 API. Usage of these endpoints is though
+// very expensive, increasing the API calls used significantly
+type EnhancedMetrics struct {
 	PullsCount   float64
 	CommitsCount float64
 	Releases     float64
@@ -57,4 +61,10 @@ type OrganisationMetrics struct {
 	TotalMemberCount   float64
 	ActiveMemberCount  float64
 	PendingMemberCount float64
+}
+
+// ProcessedRepos is used to help track and avoid duplicate repository collection of metrics
+type ProcessedRepos struct {
+	Owner string
+	Name  string
 }

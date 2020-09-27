@@ -117,13 +117,13 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssuesCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 
 		if e.metricEnabled("pulls") {
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequests"], prometheus.GaugeValue, x.AdditionalMetrics.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequests"], prometheus.GaugeValue, x.EnhancedMetrics.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		}
 		if e.metricEnabled("releases") {
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Releases"], prometheus.GaugeValue, x.AdditionalMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Releases"], prometheus.GaugeValue, x.EnhancedMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		}
 		if e.metricEnabled("commits") {
-			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Commits"], prometheus.GaugeValue, x.AdditionalMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Commits"], prometheus.GaugeValue, x.EnhancedMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		}
 	}
 
@@ -131,5 +131,9 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, e.RateLimits.Limit)
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, e.RateLimits.Remaining)
 	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, e.RateLimits.Reset)
+
+	// Clear Exporter, avoids multiple captures
+	e.Repositories = nil
+	e.ProcessedRepos = nil
 
 }

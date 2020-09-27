@@ -21,7 +21,7 @@ type Config struct {
 	APITokenEnv       string
 	APITokenFile      string
 	APIToken          string
-	AdditionalMetrics []string
+	EnhancedMetrics []string
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -45,7 +45,7 @@ func Init() Config {
 		APITokenEnv:       os.Getenv("GITHUB_TOKEN"),
 		APITokenFile:      tokenFile,
 		APIToken:          token,
-		AdditionalMetrics: strings.Split(os.Getenv("ADDITIONAL_METRICS"), ","),
+		EnhancedMetrics: strings.Split(os.Getenv("ADDITIONAL_METRICS"), ","),
 	}
 
 	return appConfig
