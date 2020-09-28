@@ -233,7 +233,6 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 // Also adds them to the metrics struct format for processing
 func (e *Exporter) enrichRepositoryMetrics(client *github.Client, repo *github.Repository) EnhancedMetrics {
 
-	// TODO Stage a better word?
 	// TODO - Fix pagination
 	pulls := 0.0
 	if e.enhancedMetricEnabled("pulls") {
@@ -336,7 +335,9 @@ func (e *Exporter) fetchOrgMembers(client *github.Client, org string) []*github.
 		if resp.NextPage == 0 {
 			break
 		}
-		// TODO should i not then be looking for the next page surely?
+
+		opt.Page = resp.NextPage
+
 	}
 
 	return allMembers
