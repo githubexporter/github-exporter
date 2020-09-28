@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"github.com/google/go-github/github"
 	"github.com/infinityworks/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,7 @@ type Exporter struct {
 	Metrics        map[string]*prometheus.Desc
 	Config         config.Config
 	Log            *logrus.Logger
+	Client         *github.Client
 	Repositories   []RepositoryMetrics
 	ProcessedRepos []ProcessedRepos
 	Organisations  []OrganisationMetrics

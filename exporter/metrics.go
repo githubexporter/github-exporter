@@ -160,5 +160,6 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 	e.Repositories = nil
 	e.ProcessedRepos = nil
 	e.Organisations = nil
+	e.Client = nil
 
 }

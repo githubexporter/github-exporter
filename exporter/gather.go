@@ -25,12 +25,12 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	e.Log.Info("Initialising capture of metrics")
 
-	client := e.newClient()
+	e.newClient()
 
-	e.gatherByOrg(client)
-	e.gatherByUser(client)
-	e.gatherByRepo(client)
-	e.gatherRates(client)
+	e.gatherByOrg()
+	e.gatherByUser()
+	e.gatherByRepo()
+	e.gatherRates()
 
 	// Set prometheus gauge metrics using the data gathered
 	e.processMetrics(ch)
@@ -41,7 +41,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 // newClient provides an authenticated Github
 // client for use in our API interactions
-func (e *Exporter) newClient() *github.Client {
+func (e *Exporter) newClient() {
 	ctx := context.Background()
 
 	// Embed our authentication token in the client
@@ -50,14 +50,14 @@ func (e *Exporter) newClient() *github.Client {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	return github.NewClient(tc)
+	e.Client = github.NewClient(tc)
 }
 
 // GatherRates returns the GitHub API rate limits
 // A free call that doesn't count towards your usage
-func (e *Exporter) gatherRates(client *github.Client) {
+func (e *Exporter) gatherRates() {
 
-	limits, _, err := client.RateLimits(context.Background())
+	limits, _, err := e.Client.RateLimits(context.Background())
 	if err != nil {
 		e.Log.Errorf("Error gathering API Rate limits: %v", err)
 	}
@@ -74,7 +74,7 @@ func (e *Exporter) gatherRates(client *github.Client) {
 
 // gatherByOrg specifically makes use of collection through organisation APIS
 // the same function also gathers any associated metrics with the organisation
-func (e *Exporter) gatherByOrg(client *github.Client) {
+func (e *Exporter) gatherByOrg() {
 
 	// Only execute if these have been defined
 	if len(e.Config.Organisations) == 0 {
@@ -92,10 +92,10 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 
 		e.Log.Infof("Gathering metrics for GitHub Org %s", y)
 
-		repos := e.fetchOrgRepos(client, y)
-		members := e.fetchOrgMembers(client, y)
-		collaborators := e.fetchOrgCollaborators(client, y)
-		invites := e.fetchOrgInvites(client, y)
+		repos := e.fetchOrgRepos(y)
+		members := e.fetchOrgMembers(y)
+		collaborators := e.fetchOrgCollaborators(y)
+		invites := e.fetchOrgInvites(y)
 
 		for _, r := range repos {
 
@@ -105,7 +105,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 			}
 
 			// enrich the metrics with the enhanced metric set
-			am := e.enrichRepositoryMetrics(client, r)
+			am := e.enrichRepositoryMetrics(r)
 
 			e.stageRepositoryMetrics(r, am)
 
@@ -125,7 +125,7 @@ func (e *Exporter) gatherByOrg(client *github.Client) {
 	}
 }
 
-func (e *Exporter) gatherByUser(client *github.Client) {
+func (e *Exporter) gatherByUser() {
 
 	// Only execute if these have been defined
 	if len(e.Config.Users) == 0 {
@@ -143,7 +143,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 
 		e.Log.Info("Gathering metrics for GitHub User ", y)
 
-		repos := e.fetchUserRepos(client, y)
+		repos := e.fetchUserRepos(y)
 
 		for _, y := range repos {
 
@@ -152,7 +152,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 			}
 
 			// enrich the metrics with the enhanced metric set
-			am := e.enrichRepositoryMetrics(client, y)
+			am := e.enrichRepositoryMetrics(y)
 			e.stageRepositoryMetrics(y, am)
 
 			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
@@ -163,7 +163,7 @@ func (e *Exporter) gatherByUser(client *github.Client) {
 	}
 }
 
-func (e *Exporter) gatherByRepo(client *github.Client) {
+func (e *Exporter) gatherByRepo() {
 
 	// Only execute if these have been defined
 	if len(e.Config.Repositories) == 0 {
@@ -190,10 +190,10 @@ func (e *Exporter) gatherByRepo(client *github.Client) {
 			continue
 		}
 
-		repo := e.fetchIndividualRepo(client, o, r)
+		repo := e.fetchIndividualRepo(o, r)
 
 		// enrich the metrics with the enhanced metric set
-		am := e.enrichRepositoryMetrics(client, repo)
+		am := e.enrichRepositoryMetrics(repo)
 		e.stageRepositoryMetrics(repo, am)
 
 		e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
@@ -231,12 +231,12 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func (e *Exporter) enrichRepositoryMetrics(client *github.Client, repo *github.Repository) EnhancedMetrics {
+func (e *Exporter) enrichRepositoryMetrics(repo *github.Repository) EnhancedMetrics {
 
 	// TODO - Fix pagination
 	pulls := 0.0
 	if e.enhancedMetricEnabled("pulls") {
-		p, _, err := client.PullRequests.List(context.Background(), *repo.Owner.Login, *repo.Name, nil)
+		p, _, err := e.Client.PullRequests.List(context.Background(), *repo.Owner.Login, *repo.Name, nil)
 		if err != nil {
 			e.Log.Errorf("Error obtaining pull metrics: %v", err)
 		}
@@ -247,7 +247,7 @@ func (e *Exporter) enrichRepositoryMetrics(client *github.Client, repo *github.R
 	// TODO - Fix pagination
 	releases := 0.0
 	if e.enhancedMetricEnabled("releases") {
-		r, _, err := client.Repositories.ListReleases(context.Background(), *repo.Owner.Login, *repo.Name, nil)
+		r, _, err := e.Client.Repositories.ListReleases(context.Background(), *repo.Owner.Login, *repo.Name, nil)
 		if err != nil {
 			e.Log.Errorf("Error obtaining release metrics: %v", err)
 		}
@@ -258,7 +258,7 @@ func (e *Exporter) enrichRepositoryMetrics(client *github.Client, repo *github.R
 	// TODO - Fix pagination
 	commits := 0.0
 	if e.enhancedMetricEnabled("commits") {
-		c, _, err := client.Repositories.ListCommits(context.Background(), *repo.Owner.Login, *repo.Name, nil)
+		c, _, err := e.Client.Repositories.ListCommits(context.Background(), *repo.Owner.Login, *repo.Name, nil)
 		if err != nil {
 			e.Log.Errorf("Error obtaining commit metrics: %v", err)
 		}
@@ -294,7 +294,7 @@ func (e *Exporter) stageRepositoryMetrics(repo *github.Repository, am EnhancedMe
 
 }
 
-func (e *Exporter) fetchOrgRepos(client *github.Client, org string) []*github.Repository {
+func (e *Exporter) fetchOrgRepos(org string) []*github.Repository {
 
 	// Support pagination
 	var allRepos []*github.Repository
@@ -302,7 +302,7 @@ func (e *Exporter) fetchOrgRepos(client *github.Client, org string) []*github.Re
 
 	for {
 
-		repos, resp, err := client.Repositories.ListByOrg(context.Background(), org, opt)
+		repos, resp, err := e.Client.Repositories.ListByOrg(context.Background(), org, opt)
 		if err != nil {
 			e.Log.Errorf("Error listing repositories by org: %v", err)
 		}
@@ -317,7 +317,7 @@ func (e *Exporter) fetchOrgRepos(client *github.Client, org string) []*github.Re
 
 }
 
-func (e *Exporter) fetchOrgMembers(client *github.Client, org string) []*github.User {
+func (e *Exporter) fetchOrgMembers(org string) []*github.User {
 
 	// Support pagination
 	var allMembers []*github.User
@@ -326,7 +326,7 @@ func (e *Exporter) fetchOrgMembers(client *github.Client, org string) []*github.
 
 	for {
 
-		members, resp, err := client.Organizations.ListMembers(context.Background(), org, opt)
+		members, resp, err := e.Client.Organizations.ListMembers(context.Background(), org, opt)
 		if err != nil {
 			e.Log.Errorf("Error listing members by org: %v", err)
 		}
@@ -343,7 +343,7 @@ func (e *Exporter) fetchOrgMembers(client *github.Client, org string) []*github.
 	return allMembers
 }
 
-func (e *Exporter) fetchOrgCollaborators(client *github.Client, org string) []*github.User {
+func (e *Exporter) fetchOrgCollaborators(org string) []*github.User {
 
 	// Support pagination
 	var allCollabs []*github.User
@@ -352,7 +352,7 @@ func (e *Exporter) fetchOrgCollaborators(client *github.Client, org string) []*g
 
 	for {
 
-		collabs, resp, err := client.Organizations.ListOutsideCollaborators(context.Background(), org, opt)
+		collabs, resp, err := e.Client.Organizations.ListOutsideCollaborators(context.Background(), org, opt)
 		if err != nil {
 			e.Log.Errorf("Error listing members by org: %v", err)
 		}
@@ -366,7 +366,7 @@ func (e *Exporter) fetchOrgCollaborators(client *github.Client, org string) []*g
 	return allCollabs
 }
 
-func (e *Exporter) fetchOrgInvites(client *github.Client, org string) []*github.Invitation {
+func (e *Exporter) fetchOrgInvites(org string) []*github.Invitation {
 
 	// Support pagination
 	var allInvites []*github.Invitation
@@ -375,7 +375,7 @@ func (e *Exporter) fetchOrgInvites(client *github.Client, org string) []*github.
 
 	for {
 
-		invites, resp, err := client.Organizations.ListPendingOrgInvitations(context.Background(), org, opt)
+		invites, resp, err := e.Client.Organizations.ListPendingOrgInvitations(context.Background(), org, opt)
 		if err != nil {
 			e.Log.Errorf("Error listing members by org: %v", err)
 		}
@@ -389,7 +389,7 @@ func (e *Exporter) fetchOrgInvites(client *github.Client, org string) []*github.
 	return allInvites
 }
 
-func (e *Exporter) fetchUserRepos(client *github.Client, user string) []*github.Repository {
+func (e *Exporter) fetchUserRepos(user string) []*github.Repository {
 
 	// Support pagination
 	var allRepos []*github.Repository
@@ -397,7 +397,7 @@ func (e *Exporter) fetchUserRepos(client *github.Client, user string) []*github.
 
 	for {
 
-		repos, resp, err := client.Repositories.List(context.Background(), user, opt)
+		repos, resp, err := e.Client.Repositories.List(context.Background(), user, opt)
 		if err != nil {
 			e.Log.Errorf("Error listing repositories by user: %v", err)
 		}
@@ -412,10 +412,10 @@ func (e *Exporter) fetchUserRepos(client *github.Client, user string) []*github.
 
 }
 
-func (e *Exporter) fetchIndividualRepo(client *github.Client, owner, repo string) *github.Repository {
+func (e *Exporter) fetchIndividualRepo(owner, repo string) *github.Repository {
 
 	// collect basic repository information for the repo
-	r, _, err := client.Repositories.Get(context.Background(), owner, repo)
+	r, _, err := e.Client.Repositories.Get(context.Background(), owner, repo)
 	if err != nil {
 		e.Log.Errorf("Error collecting repository metrics: %v", err)
 	}
