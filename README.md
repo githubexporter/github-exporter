@@ -6,14 +6,39 @@ Exposes basic metrics for your repositories from the GitHub API, to a Prometheus
 
 ## Configuration
 
-This exporter is setup to take input from environment variables. All variables are optional:
+This exporter is setup to take configuration through environment variables. All variables are optional:
 
-* `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2".
-* `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
-* `USERS` If supplied, the exporter will enumerate all repositories for that users. Expected in
-the format "user1, user2".
+### Targets
+
+All targets support arrays of values (comma delimited). e.g. "org1/repo1, org2/repo3".
+
+* `ORGS` If supplied, the exporter will enumerate all repositories for any organizations are processed.
+* `USERS` If supplied, the exporter will enumerate all repositories for that users in a similar fashion to organisations.
+* `REPOS` If supplied, allows you to explicitly set the repos you wish to monitor Can be across different Github users/orgs.
+
+### Authentication
+
+Either through environmental variables or passed in through a token file (more secure).
+
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `GITHUB_TOKEN_FILE` If supplied _instead of_ `GITHUB_TOKEN`, enables the user to supply a path to a file containing a github authentication token that allows the API to be queried more often. Optional, but recommended.
+
+### Enhanced Metrics
+
+* `ENHANCED_METRICS` allows you to specify additional collection of the following metrics per repository;
+
+- Commits
+- Releases
+- Pulls
+
+**Please be aware the above metrics can only be collected from the V3 API on a per repositry basis. As a result they are very expensive to capture and you may exceed the GitHub API rate limits if you're monitoring hundreds of repositories.**
+
+In order to collect any of the above, populate the `ENHANCED_METRICS` variable with a comma delimited set of metrics you wish to capture, e.g. `ENHANCED_METRICS="commits, releases, pulls"`.
+
+### Operating Configuration
+
+Likely something most users will leave as the default, feel free to override as you see fit.
+
 * `API_URL` Github API URL, shouldn't need to change this. Defaults to `https://api.github.com`
 * `LISTEN_PORT` The port you wish to run the container on, the Dockerfile defaults this to `9171`
 * `METRICS_PATH` the metrics URL path you wish to use, defaults to `/metrics`
@@ -24,13 +49,13 @@ the format "user1, user2".
 
 Run manually from Docker Hub:
 ```
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" infinityworks/github-exporter
+docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/policies, infinityworks/prom-conf" infinityworks/github-exporter
 ```
 
 Build a docker image:
 ```
 docker build -t <image-name> .
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" <image-name>
+docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/policies, infinityworks/prom-conf" <image-name>
 ```
 
 ## Docker compose
@@ -52,8 +77,7 @@ github-exporter:
 
 ## Metrics
 
-Metrics will be made available on port 9171 by default
-An example of these metrics can be found in the `METRICS.md` markdown file in the root of this repository
+Metrics will be made available on port 9171 by default. An example of these metrics can be found in the `METRICS.md` markdown file in the root of this repository
 
 ## Tests
 
