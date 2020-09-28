@@ -56,7 +56,7 @@ func TestGithubExporter(t *testing.T) {
 
 func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
 	exp := exporter.Exporter{
-		APIMetrics: exporter.AddMetrics(),
+		Metrics: exporter.AddMetrics(),
 		Config:     conf,
 	}
 	server := web.NewServer(exp)

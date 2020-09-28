@@ -26,7 +26,7 @@ func main() {
 	log.WithFields(structs.Map(applicationCfg)).Info("Starting Exporter")
 
 	exp := exporter.Exporter{
-		APIMetrics: mets,
+		Metrics: mets,
 		Config:     applicationCfg,
 		Log:        log,
 	}

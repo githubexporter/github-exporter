@@ -10,7 +10,7 @@ import (
 // This is done so that the relevant functions have easy access to the
 // user defined runtime configuration when the Collect method is called.
 type Exporter struct {
-	APIMetrics     map[string]*prometheus.Desc
+	Metrics        map[string]*prometheus.Desc
 	Config         config.Config
 	Log            *logrus.Logger
 	Repositories   []RepositoryMetrics
