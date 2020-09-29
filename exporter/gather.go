@@ -104,8 +104,8 @@ func (e *Exporter) gatherByOrg() {
 				continue
 			}
 
-			// enrich the metrics with the enhanced metric set
-			am := e.enrichRepositoryMetrics(r)
+			// enrich the metrics with the optional metric set
+			am := e.optionalRepositoryMetrics(r)
 
 			e.stageRepositoryMetrics(r, am)
 
@@ -151,8 +151,8 @@ func (e *Exporter) gatherByUser() {
 				continue
 			}
 
-			// enrich the metrics with the enhanced metric set
-			am := e.enrichRepositoryMetrics(y)
+			// enrich the metrics with the optional metric set
+			am := e.optionalRepositoryMetrics(y)
 			e.stageRepositoryMetrics(y, am)
 
 			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
@@ -192,8 +192,8 @@ func (e *Exporter) gatherByRepo() {
 
 		repo := e.fetchIndividualRepo(o, r)
 
-		// enrich the metrics with the enhanced metric set
-		am := e.enrichRepositoryMetrics(repo)
+		// enrich the metrics with the optional metric set
+		am := e.optionalRepositoryMetrics(repo)
 		e.stageRepositoryMetrics(repo, am)
 
 		e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
@@ -204,9 +204,9 @@ func (e *Exporter) gatherByRepo() {
 	}
 }
 
-func (e *Exporter) enhancedMetricEnabled(option string) bool {
+func (e *Exporter) optionalMetricEnabled(option string) bool {
 
-	for _, v := range e.Config.EnhancedMetrics {
+	for _, v := range e.Config.OptionalMetrics {
 		if v == option {
 			return true
 		}
@@ -231,11 +231,11 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func (e *Exporter) enrichRepositoryMetrics(repo *github.Repository) EnhancedMetrics {
+func (e *Exporter) optionalRepositoryMetrics(repo *github.Repository) OptionalRepositoryMetrics {
 
 	// TODO - Fix pagination
 	pulls := 0.0
-	if e.enhancedMetricEnabled("pulls") {
+	if e.optionalMetricEnabled("pulls") {
 		p, _, err := e.Client.PullRequests.List(context.Background(), *repo.Owner.Login, *repo.Name, nil)
 		if err != nil {
 			e.Log.Errorf("Error obtaining pull metrics: %v", err)
@@ -246,7 +246,7 @@ func (e *Exporter) enrichRepositoryMetrics(repo *github.Repository) EnhancedMetr
 
 	// TODO - Fix pagination
 	releases := 0.0
-	if e.enhancedMetricEnabled("releases") {
+	if e.optionalMetricEnabled("releases") {
 		r, _, err := e.Client.Repositories.ListReleases(context.Background(), *repo.Owner.Login, *repo.Name, nil)
 		if err != nil {
 			e.Log.Errorf("Error obtaining release metrics: %v", err)
@@ -257,7 +257,7 @@ func (e *Exporter) enrichRepositoryMetrics(repo *github.Repository) EnhancedMetr
 
 	// TODO - Fix pagination
 	commits := 0.0
-	if e.enhancedMetricEnabled("commits") {
+	if e.optionalMetricEnabled("commits") {
 		c, _, err := e.Client.Repositories.ListCommits(context.Background(), *repo.Owner.Login, *repo.Name, nil)
 		if err != nil {
 			e.Log.Errorf("Error obtaining commit metrics: %v", err)
@@ -266,7 +266,7 @@ func (e *Exporter) enrichRepositoryMetrics(repo *github.Repository) EnhancedMetr
 
 	}
 
-	return EnhancedMetrics{
+	return OptionalRepositoryMetrics{
 		PullsCount:   pulls,
 		CommitsCount: commits,
 		Releases:     releases,
@@ -274,22 +274,22 @@ func (e *Exporter) enrichRepositoryMetrics(repo *github.Repository) EnhancedMetr
 
 }
 
-func (e *Exporter) stageRepositoryMetrics(repo *github.Repository, am EnhancedMetrics) {
+func (e *Exporter) stageRepositoryMetrics(repo *github.Repository, am OptionalRepositoryMetrics) {
 
 	e.Repositories = append(e.Repositories, RepositoryMetrics{
-		Name:            e.derefString(repo.Name),
-		Owner:           e.derefString(repo.Owner.Login),
-		Archived:        strconv.FormatBool(e.derefBool(repo.Archived)),
-		Private:         strconv.FormatBool(e.derefBool(repo.Private)),
-		Fork:            strconv.FormatBool(e.derefBool(repo.Fork)),
-		ForksCount:      float64(e.derefInt(repo.ForksCount)),
-		WatchersCount:   float64(e.derefInt(repo.WatchersCount)),
-		StargazersCount: float64(e.derefInt(repo.StargazersCount)),
-		EnhancedMetrics: am,
-		OpenIssuesCount: float64(e.derefInt(repo.OpenIssuesCount)),
-		Size:            float64(e.derefInt(repo.Size)),
-		License:         repo.License.GetKey(),
-		Language:        e.derefString(repo.Language),
+		Name:                      e.derefString(repo.Name),
+		Owner:                     e.derefString(repo.Owner.Login),
+		Archived:                  strconv.FormatBool(e.derefBool(repo.Archived)),
+		Private:                   strconv.FormatBool(e.derefBool(repo.Private)),
+		Fork:                      strconv.FormatBool(e.derefBool(repo.Fork)),
+		ForksCount:                float64(e.derefInt(repo.ForksCount)),
+		WatchersCount:             float64(e.derefInt(repo.WatchersCount)),
+		StargazersCount:           float64(e.derefInt(repo.StargazersCount)),
+		OptionalRepositoryMetrics: am,
+		OpenIssuesCount:           float64(e.derefInt(repo.OpenIssuesCount)),
+		Size:                      float64(e.derefInt(repo.Size)),
+		License:                   repo.License.GetKey(),
+		Language:                  e.derefString(repo.Language),
 	})
 
 }

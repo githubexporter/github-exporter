@@ -26,25 +26,25 @@ type Exporter struct {
 // Also this includes the additional metrics we capture outside the standard return
 // from the github API
 type RepositoryMetrics struct {
-	Name            string
-	Owner           string
-	Archived        string
-	Private         string
-	Fork            string
-	ForksCount      float64
-	WatchersCount   float64
-	StargazersCount float64
-	OpenIssuesCount float64
-	Size            float64
-	License         string
-	Language        string
-	EnhancedMetrics EnhancedMetrics
+	Name                      string
+	Owner                     string
+	Archived                  string
+	Private                   string
+	Fork                      string
+	ForksCount                float64
+	WatchersCount             float64
+	StargazersCount           float64
+	OpenIssuesCount           float64
+	Size                      float64
+	License                   string
+	Language                  string
+	OptionalRepositoryMetrics OptionalRepositoryMetrics
 }
 
-// EnhancedMetrics is used to track metrics not available through
+// OptionalRepositoryMetrics is used to track metrics not available through
 // standard api endpoints in the v3 API. Usage of these endpoints is though
 // very expensive, increasing the API calls used significantly
-type EnhancedMetrics struct {
+type OptionalRepositoryMetrics struct {
 	PullsCount   float64
 	CommitsCount float64
 	Releases     float64

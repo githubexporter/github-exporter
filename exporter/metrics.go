@@ -131,14 +131,14 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(e.Metrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.Metrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssuesCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 
-		if e.enhancedMetricEnabled("pulls") {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["PullRequests"], prometheus.GaugeValue, x.EnhancedMetrics.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		if e.optionalMetricEnabled("pulls") {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["PullRequests"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		}
-		if e.enhancedMetricEnabled("releases") {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["Releases"], prometheus.GaugeValue, x.EnhancedMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		if e.optionalMetricEnabled("releases") {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["Releases"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		}
-		if e.enhancedMetricEnabled("commits") {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["Commits"], prometheus.GaugeValue, x.EnhancedMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		if e.optionalMetricEnabled("commits") {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["Commits"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
 		}
 	}
 

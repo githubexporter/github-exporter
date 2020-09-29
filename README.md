@@ -23,9 +23,9 @@ Either through environmental variables or passed in through a token file (more s
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `GITHUB_TOKEN_FILE` If supplied _instead of_ `GITHUB_TOKEN`, enables the user to supply a path to a file containing a github authentication token that allows the API to be queried more often. Optional, but recommended.
 
-### Enhanced Metrics
+### Optional Metrics
 
-* `ENHANCED_METRICS` allows you to specify additional collection of the following metrics per repository;
+* `OPTIONAL_METRICS` allows you to specify additional collection of the following metrics per repository;
 
 - Commits
 - Releases
@@ -33,7 +33,7 @@ Either through environmental variables or passed in through a token file (more s
 
 **Please be aware the above metrics can only be collected from the V3 API on a per repositry basis. As a result they are very expensive to capture and you may exceed the GitHub API rate limits if you're monitoring hundreds of repositories.**
 
-In order to collect any of the above, populate the `ENHANCED_METRICS` variable with a comma delimited set of metrics you wish to capture, e.g. `ENHANCED_METRICS="commits, releases, pulls"`.
+In order to collect any of the above, populate the `OPTIONAL_METRICS` variable with a comma delimited set of metrics you wish to capture, e.g. `OPTIONAL_METRICS="commits, releases, pulls"`.
 
 ### Operating Configuration
 
