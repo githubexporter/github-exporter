@@ -233,37 +233,20 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 // Also adds them to the metrics struct format for processing
 func (e *Exporter) optionalRepositoryMetrics(repo *github.Repository) OptionalRepositoryMetrics {
 
-	// TODO - Fix pagination
 	pulls := 0.0
-	if e.optionalMetricEnabled("pulls") {
-		p, _, err := e.Client.PullRequests.List(context.Background(), *repo.Owner.Login, *repo.Name, nil)
-		if err != nil {
-			e.Log.Errorf("Error obtaining pull metrics: %v", err)
-		}
-
-		pulls = float64(len(p))
-	}
-
-	// TODO - Fix pagination
-	releases := 0.0
-	if e.optionalMetricEnabled("releases") {
-		r, _, err := e.Client.Repositories.ListReleases(context.Background(), *repo.Owner.Login, *repo.Name, nil)
-		if err != nil {
-			e.Log.Errorf("Error obtaining release metrics: %v", err)
-		}
-
-		releases = float64(len(r))
-	}
-
-	// TODO - Fix pagination
 	commits := 0.0
-	if e.optionalMetricEnabled("commits") {
-		c, _, err := e.Client.Repositories.ListCommits(context.Background(), *repo.Owner.Login, *repo.Name, nil)
-		if err != nil {
-			e.Log.Errorf("Error obtaining commit metrics: %v", err)
-		}
-		releases = float64(len(c))
+	releases := 0.0
 
+	if e.optionalMetricEnabled("pulls") {
+		pulls = e.fetchRepoPulls(*repo.Owner.Login, *repo.Name)
+	}
+
+	if e.optionalMetricEnabled("commits") {
+		commits = e.fetchRepoCommits(*repo.Owner.Login, *repo.Name)
+	}
+
+	if e.optionalMetricEnabled("releases") {
+		releases = e.fetchRepoReleases(*repo.Owner.Login, *repo.Name)
 	}
 
 	return OptionalRepositoryMetrics{
@@ -421,4 +404,76 @@ func (e *Exporter) fetchIndividualRepo(owner, repo string) *github.Repository {
 	}
 
 	return r
+}
+
+func (e *Exporter) fetchRepoPulls(owner, repo string) float64 {
+
+	// Support pagination
+	var totalPulls []*github.PullRequest
+	opt := &github.PullRequestListOptions{ListOptions: github.ListOptions{PerPage: 100}}
+
+	for {
+
+		p, resp, err := e.Client.PullRequests.List(context.Background(), owner, repo, opt)
+		if err != nil {
+			e.Log.Errorf("Error obtaining pull metrics: %v", err)
+		}
+
+		totalPulls = append(totalPulls, p...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	return float64(len(totalPulls))
+
+}
+
+func (e *Exporter) fetchRepoCommits(owner, repo string) float64 {
+
+	// Support pagination
+	var totalCommits []*github.RepositoryCommit
+	opt := &github.CommitsListOptions{ListOptions: github.ListOptions{PerPage: 100}}
+
+	for {
+
+		c, resp, err := e.Client.Repositories.ListCommits(context.Background(), owner, repo, opt)
+		if err != nil {
+			e.Log.Errorf("Error obtaining commit metrics: %v", err)
+		}
+
+		totalCommits = append(totalCommits, c...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	return float64(len(totalCommits))
+
+}
+
+func (e *Exporter) fetchRepoReleases(owner, repo string) float64 {
+
+	// Support pagination
+	var totalReleases []*github.RepositoryRelease
+	opt := &github.ListOptions{PerPage: 100}
+
+	for {
+
+		r, resp, err := e.Client.Repositories.ListReleases(context.Background(), owner, repo, opt)
+		if err != nil {
+			e.Log.Errorf("Error obtaining release metrics: %v", err)
+		}
+
+		totalReleases = append(totalReleases, r...)
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.Page = resp.NextPage
+	}
+
+	return float64(len(totalReleases))
+
 }
