@@ -47,7 +47,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	Metrics["ReleaseDownloads"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "release_downloads"),
 		"Download count for a given release",
-		[]string{"repo", "user", "release", "name", "created_at"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language", "release", "name", "created_at"}, nil,
 	)
 	Metrics["Releases"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "releases"),
@@ -136,6 +136,10 @@ func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
 		}
 		if e.optionalMetricEnabled("releases") {
 			ch <- prometheus.MustNewConstMetric(e.Metrics["Releases"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+
+			for _, y := range x.OptionalRepositoryMetrics.ReleaseDownloads {
+				ch <- prometheus.MustNewConstMetric(e.Metrics["ReleaseDownloads"], prometheus.GaugeValue, y.DownloadCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language, y.ReleaseName, y.AssetName, y.CreatedAt)
+			}
 		}
 		if e.optionalMetricEnabled("commits") {
 			ch <- prometheus.MustNewConstMetric(e.Metrics["Commits"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)

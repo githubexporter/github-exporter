@@ -233,9 +233,12 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 // Also adds them to the metrics struct format for processing
 func (e *Exporter) optionalRepositoryMetrics(repo *github.Repository) OptionalRepositoryMetrics {
 
-	pulls := 0.0
-	commits := 0.0
-	releases := 0.0
+	var (
+		pulls            float64
+		commits          float64
+		releases         float64
+		releaseDownloads []RepoReleaseDownloads
+	)
 
 	if e.optionalMetricEnabled("pulls") {
 		pulls = e.fetchRepoPulls(*repo.Owner.Login, *repo.Name)
@@ -246,13 +249,14 @@ func (e *Exporter) optionalRepositoryMetrics(repo *github.Repository) OptionalRe
 	}
 
 	if e.optionalMetricEnabled("releases") {
-		releases = e.fetchRepoReleases(*repo.Owner.Login, *repo.Name)
+		releases, releaseDownloads = e.fetchRepoReleases(*repo.Owner.Login, *repo.Name)
 	}
 
 	return OptionalRepositoryMetrics{
-		PullsCount:   pulls,
-		CommitsCount: commits,
-		Releases:     releases,
+		PullsCount:       pulls,
+		CommitsCount:     commits,
+		Releases:         releases,
+		ReleaseDownloads: releaseDownloads,
 	}
 
 }
@@ -454,10 +458,12 @@ func (e *Exporter) fetchRepoCommits(owner, repo string) float64 {
 
 }
 
-func (e *Exporter) fetchRepoReleases(owner, repo string) float64 {
+func (e *Exporter) fetchRepoReleases(owner, repo string) (float64, []RepoReleaseDownloads) {
 
 	// Support pagination
-	var totalReleases []*github.RepositoryRelease
+	var releases []*github.RepositoryRelease
+	var downloads []RepoReleaseDownloads
+
 	opt := &github.ListOptions{PerPage: 100}
 
 	for {
@@ -467,13 +473,28 @@ func (e *Exporter) fetchRepoReleases(owner, repo string) float64 {
 			e.Log.Errorf("Error obtaining release metrics: %v", err)
 		}
 
-		totalReleases = append(totalReleases, r...)
+		releases = append(releases, r...)
+		e.Log.Info("In Loop 1")
+		for _, y := range r {
+			e.Log.Info("In Loop 2, length of assets: ", len(y.Assets))
+
+			for _, x := range y.Assets {
+				e.Log.Info("In Loop 3")
+
+				downloads = append(downloads, RepoReleaseDownloads{
+					ReleaseName:   y.GetName(),
+					AssetName:     x.GetName(),
+					CreatedAt:     x.CreatedAt.String(),
+					DownloadCount: float64(*x.DownloadCount),
+				})
+			}
+		}
 		if resp.NextPage == 0 {
 			break
 		}
 		opt.Page = resp.NextPage
 	}
 
-	return float64(len(totalReleases))
+	return float64(len(releases)), downloads
 
 }

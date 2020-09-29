@@ -45,9 +45,18 @@ type RepositoryMetrics struct {
 // standard api endpoints in the v3 API. Usage of these endpoints is though
 // very expensive, increasing the API calls used significantly
 type OptionalRepositoryMetrics struct {
-	PullsCount   float64
-	CommitsCount float64
-	Releases     float64
+	PullsCount       float64
+	CommitsCount     float64
+	Releases         float64
+	ReleaseDownloads []RepoReleaseDownloads
+}
+
+// RepoReleaseDownloads tracks release metrics on a per-release level of granularity
+type RepoReleaseDownloads struct {
+	ReleaseName   string
+	AssetName     string
+	CreatedAt     string
+	DownloadCount float64
 }
 
 // RateMetrics help us monitor performance against the
