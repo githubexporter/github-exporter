@@ -2,16 +2,23 @@ package test
 
 import (
 	"fmt"
-	"github.com/infinityworks/github-exporter/config"
-	"github.com/infinityworks/github-exporter/exporter"
-	web "github.com/infinityworks/github-exporter/http"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/steinfletcher/apitest"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/infinityworks/github-exporter/config"
+	"github.com/infinityworks/github-exporter/exporter"
+	web "github.com/infinityworks/github-exporter/http"
+	"github.com/infinityworks/go-common/logger"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
+	"github.com/steinfletcher/apitest"
+)
+
+var (
+	log *logrus.Logger
 )
 
 func TestHomepage(t *testing.T) {
@@ -55,9 +62,13 @@ func TestGithubExporter(t *testing.T) {
 }
 
 func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
+
+	log = logger.Start(conf.Config)
+
 	exp := exporter.Exporter{
 		Metrics: exporter.AddMetrics(),
-		Config:     conf,
+		Config:  conf,
+		Log:     log,
 	}
 	server := web.NewServer(exp)
 
@@ -75,8 +86,6 @@ func withConfig(repos string) config.Config {
 func githubRepos() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo").
-		Header("Authorization", "token 12345").
-		Query("per_page", "100").
 		RespondWith().
 		Times(2).
 		Body(readFile("testdata/my_repo_response.json")).
@@ -87,11 +96,10 @@ func githubRepos() *apitest.Mock {
 func githubRateLimit() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/rate_limit").
-		Header("Authorization", "token 12345").
-		RespondWith().
 		Header("X-RateLimit-Limit", "60").
 		Header("X-RateLimit-Remaining", "60").
 		Header("X-RateLimit-Reset", "1566853865").
+		RespondWith().
 		Status(http.StatusOK).
 		End()
 }
@@ -99,7 +107,6 @@ func githubRateLimit() *apitest.Mock {
 func githubReleases() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo/releases").
-		Header("Authorization", "token 12345").
 		RespondWith().
 		Times(2).
 		Body(readFile("testdata/releases_response.json")).
@@ -110,7 +117,6 @@ func githubReleases() *apitest.Mock {
 func githubPulls() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo/pulls").
-		Header("Authorization", "token 12345").
 		RespondWith().
 		Times(2).
 		Body(readFile("testdata/pulls_response.json")).
