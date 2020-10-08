@@ -117,7 +117,6 @@ func getPRs(e *Exporter, url string, data *[]Pull) {
 	if err != nil {
 		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
 	}
-	fmt.Println(&data)
 
 	json.Unmarshal(pullsResponse[0].body, &data)
 }

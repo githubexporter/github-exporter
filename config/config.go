@@ -28,6 +28,8 @@ type Config struct {
 // Init populates the Config struct based on environmental runtime configuration
 func Init() Config {
 
+	listenPort := cfg.GetEnv("LISTEN_PORT", "9171")
+	os.Setenv("LISTEN_PORT", listenPort)
 	ac := cfg.Init()
 	url := cfg.GetEnv("API_URL", "https://api.github.com")
 	repos := os.Getenv("REPOS")
