@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -25,15 +26,110 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	e.Log.Info("Initialising capture of metrics")
 
-	e.newClient()
+	// TBC HOW THIS WORKS
+	allRepos := []*RepositoryMetrics{}
+	allOrgs := []*OrganisationMetrics{}
 
-	e.gatherByOrg()
-	e.gatherByUser()
-	e.gatherByRepo()
-	e.gatherRates()
+	// Only execute if these have been defined
+	if len(e.Config.Organisations) > 0 {
 
-	// Set prometheus gauge metrics using the data gathered
-	e.processMetrics(ch)
+		// Loop through the organizations
+		for _, org := range e.Config.Organisations {
+
+			// Skip any undefined orgs
+			if org == "" {
+				continue
+			}
+
+			e.Log.Infof("Gathering metrics for GitHub Org %s", org)
+
+			org, repos, err := gatherByOrg(e.Client, org, e.Config.OptionalMetrics)
+			if err != nil {
+				e.Log.Error(err)
+			}
+
+			allOrgs = append(allOrgs, org)
+			allRepos = append(allRepos, repos...)
+		}
+
+		for _, org := range allOrgs {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["MembersCount"], prometheus.GaugeValue, org.MembersCount, org.Name)
+			ch <- prometheus.MustNewConstMetric(e.Metrics["OutsideCollaboratorsCount"], prometheus.GaugeValue, org.OutsideCollaboratorsCount, org.Name)
+			ch <- prometheus.MustNewConstMetric(e.Metrics["PendingOrgInvitationsCount"], prometheus.GaugeValue, org.PendingOrgInvitationsCount, org.Name)
+		}
+
+	}
+
+	// Only execute if these have been defined
+	if len(e.Config.Users) > 0 {
+		// Loop through the organizations
+		for _, user := range e.Config.Users {
+
+			// Skip any undefined users
+			if user == "" {
+				continue
+			}
+
+			e.Log.Info("Gathering metrics for GitHub User ", user)
+
+			repos, err := fetchUserRepos(e.Client, user, e.Config.OptionalMetrics)
+			if err != nil {
+				e.Log.Error(err)
+			}
+
+			allRepos = append(allRepos, repos...)
+
+		}
+	}
+
+	// Only execute if these have been defined
+	if len(e.Config.Repositories) > 0 {
+
+		for _, repo := range e.Config.Repositories {
+
+			// Skip any undefined repos
+			if repo == "" {
+				continue
+			}
+
+			e.Log.Infof("Gathering metrics for GitHub Repo %s", repo)
+
+		}
+		e.Log.Info("No individual repositories specified, skipping collection")
+
+	}
+
+	// Range through Repository metrics
+	for _, x := range allRepos {
+		ch <- prometheus.MustNewConstMetric(e.Metrics["Stars"], prometheus.GaugeValue, x.StargazersCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["Forks"], prometheus.GaugeValue, x.ForksCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["Watchers"], prometheus.GaugeValue, x.WatchersCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.Metrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssuesCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+
+		if optionalMetricEnabled(e.Config.OptionalMetrics, "pulls") {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["PullRequests"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		}
+		if optionalMetricEnabled(e.Config.OptionalMetrics, "releases") {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["Releases"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+
+			for _, y := range x.OptionalRepositoryMetrics.ReleaseDownloads {
+				ch <- prometheus.MustNewConstMetric(e.Metrics["ReleaseDownloads"], prometheus.GaugeValue, y.DownloadCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language, y.ReleaseName, y.AssetName, y.CreatedAt)
+			}
+		}
+		if optionalMetricEnabled(e.Config.OptionalMetrics, "commits") {
+			ch <- prometheus.MustNewConstMetric(e.Metrics["Commits"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
+		}
+	}
+
+	rates, err := gatherRates(e.Client)
+	if err != nil {
+		e.Log.Error(err)
+	}
+
+	ch <- prometheus.MustNewConstMetric(e.Metrics["Limit"], prometheus.GaugeValue, rates.Limit)
+	ch <- prometheus.MustNewConstMetric(e.Metrics["Remaining"], prometheus.GaugeValue, rates.Remaining)
+	ch <- prometheus.MustNewConstMetric(e.Metrics["Reset"], prometheus.GaugeValue, rates.Reset)
 
 	e.Log.Info("All Metrics successfully collected")
 
@@ -41,172 +137,99 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 // newClient provides an authenticated Github
 // client for use in our API interactions
-func (e *Exporter) newClient() {
+func newClient(token string) *github.Client {
 	ctx := context.Background()
 
 	// Embed our authentication token in the client
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: e.Config.APIToken},
+		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	e.Client = github.NewClient(tc)
+	return github.NewClient(tc)
 }
 
 // GatherRates returns the GitHub API rate limits
 // A free call that doesn't count towards your usage
-func (e *Exporter) gatherRates() {
+func gatherRates(client *github.Client) (*RateMetrics, error) {
 
-	limits, _, err := e.Client.RateLimits(context.Background())
+	limits, _, err := client.RateLimits(context.Background())
 	if err != nil {
-		e.Log.Errorf("Error gathering API Rate limits: %v", err)
+		return nil, fmt.Errorf("Error gathering API Rate limits: %v", err)
 	}
 
-	e.RateLimits.Limit = float64(limits.Core.Limit)
-	e.RateLimits.Remaining = float64(limits.Core.Remaining)
-	e.RateLimits.Reset = float64(limits.Core.Reset.Unix())
-
-	if e.RateLimits.Remaining == 0 {
-		e.Log.Errorf("Error - Github API Rate limit exceeded, review rates and usage")
+	if limits.Core.Remaining == 0 {
+		return nil, fmt.Errorf("Error - Github API Rate limit exceeded, review rates and usage")
 	}
+
+	return &RateMetrics{
+		Limit:     float64(limits.Core.Limit),
+		Remaining: float64(limits.Core.Remaining),
+		Reset:     float64(limits.Core.Reset.Unix()),
+	}, nil
 
 }
 
 // gatherByOrg specifically makes use of collection through organisation APIS
 // the same function also gathers any associated metrics with the organisation
-func (e *Exporter) gatherByOrg() {
+func gatherByOrg(client *github.Client, org string, opts []string) (*OrganisationMetrics, []*RepositoryMetrics, error) {
 
-	// Only execute if these have been defined
-	if len(e.Config.Organisations) == 0 {
-		e.Log.Info("No Organisations specified, skipping collection")
-		return
+	repos, err := fetchOrgRepos(client, org, opts)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Loop through the organizations
-	for _, y := range e.Config.Organisations {
-
-		// Skip any undefined orgs
-		if y == "" {
-			continue
-		}
-
-		e.Log.Infof("Gathering metrics for GitHub Org %s", y)
-
-		repos := e.fetchOrgRepos(y)
-		members := e.fetchOrgMembers(y)
-		collaborators := e.fetchOrgCollaborators(y)
-		invites := e.fetchOrgInvites(y)
-
-		for _, r := range repos {
-
-			// Check this hasn't been collected prior
-			if e.isDuplicateRepository(e.ProcessedRepos, r.Owner.GetLogin(), *r.Name) {
-				continue
-			}
-
-			// enrich the metrics with the optional metric set
-			am := e.optionalRepositoryMetrics(r)
-
-			e.stageRepositoryMetrics(r, am)
-
-			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
-				Owner: r.Owner.GetLogin(),
-				Name:  *r.Name,
-			})
-		}
-
-		e.Organisations = append(e.Organisations, OrganisationMetrics{
-			Name:                       y,
-			MembersCount:               float64(len(members)),
-			OutsideCollaboratorsCount:  float64(len(collaborators)),
-			PendingOrgInvitationsCount: float64(len(invites)),
-		})
-
+	members, err := fetchOrgMembers(client, org)
+	if err != nil {
+		return nil, nil, err
 	}
+
+	collaborators, err := fetchOrgCollaborators(client, org)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	invites, err := fetchOrgInvites(client, org)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &OrganisationMetrics{
+		Name:                       org,
+		MembersCount:               float64(len(members)),
+		OutsideCollaboratorsCount:  float64(len(collaborators)),
+		PendingOrgInvitationsCount: float64(len(invites)),
+	}, repos, nil
+
 }
 
-func (e *Exporter) gatherByUser() {
+func gatherByRepo(client *github.Client, repo string, opts []string) (*RepositoryMetrics, error) {
 
-	// Only execute if these have been defined
-	if len(e.Config.Users) == 0 {
-		e.Log.Info("No Users specified, skipping collection")
-		return
+	// Prepare the arguemtns for the get
+	parts := strings.Split(repo, "/")
+	o := parts[0]
+	r := parts[1]
+
+	// if e.isDuplicateRepository(e.ProcessedRepos, o, r) {
+	// 	continue
+	// }
+	// collect basic repository information for the repo
+	repoMetrics, _, err := client.Repositories.Get(context.Background(), o, r)
+	if err != nil {
+		return nil, fmt.Errorf("Error collecting repository metrics: %v", err)
 	}
 
-	// Loop through the Users passed in
-	for _, y := range e.Config.Users {
-
-		// Skip any undefined users
-		if y == "" {
-			continue
-		}
-
-		e.Log.Info("Gathering metrics for GitHub User ", y)
-
-		repos := e.fetchUserRepos(y)
-
-		for _, y := range repos {
-
-			if e.isDuplicateRepository(e.ProcessedRepos, y.Owner.GetLogin(), *y.Name) {
-				continue
-			}
-
-			// enrich the metrics with the optional metric set
-			am := e.optionalRepositoryMetrics(y)
-			e.stageRepositoryMetrics(y, am)
-
-			e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
-				Owner: y.Owner.GetLogin(),
-				Name:  *y.Name,
-			})
-		}
+	om, err := optionalRepositoryMetrics(client, o, r, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error collecting optional metrics: %v", err)
 	}
+	return newRepositoryMetrics(repoMetrics, om), nil
+
 }
 
-func (e *Exporter) gatherByRepo() {
+func optionalMetricEnabled(options []string, option string) bool {
 
-	// Only execute if these have been defined
-	if len(e.Config.Repositories) == 0 {
-		e.Log.Info("No individual repositories specified, skipping collection")
-		return
-	}
-
-	// Loop through the Users passed in
-	for _, y := range e.Config.Repositories {
-
-		// Skip any undefined users
-		if y == "" {
-			continue
-		}
-
-		// Prepare the arguemtns for the get
-		parts := strings.Split(y, "/")
-		o := parts[0]
-		r := parts[1]
-
-		e.Log.Infof("Gathering metrics for GitHub Repo %s", y)
-
-		if e.isDuplicateRepository(e.ProcessedRepos, o, r) {
-			continue
-		}
-
-		repo := e.fetchIndividualRepo(o, r)
-
-		// enrich the metrics with the optional metric set
-		am := e.optionalRepositoryMetrics(repo)
-		e.stageRepositoryMetrics(repo, am)
-
-		e.ProcessedRepos = append(e.ProcessedRepos, ProcessedRepos{
-			Owner: o,
-			Name:  r,
-		})
-
-	}
-}
-
-func (e *Exporter) optionalMetricEnabled(option string) bool {
-
-	for _, v := range e.Config.OptionalMetrics {
+	for _, v := range options {
 		if v == option {
 			return true
 		}
@@ -231,80 +254,98 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 
 // Adds metrics not available in the standard repository response
 // Also adds them to the metrics struct format for processing
-func (e *Exporter) optionalRepositoryMetrics(repo *github.Repository) OptionalRepositoryMetrics {
+func optionalRepositoryMetrics(client *github.Client, owner, name string, opts []string) (*OptionalRepositoryMetrics, error) {
 
 	var (
 		pulls            float64
 		commits          float64
 		releases         float64
 		releaseDownloads []RepoReleaseDownloads
+		err              error
 	)
 
-	if e.optionalMetricEnabled("pulls") {
-		pulls = e.fetchRepoPulls(*repo.Owner.Login, *repo.Name)
+	if optionalMetricEnabled(opts, "pulls") {
+		pulls, err = fetchRepoPulls(client, owner, name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if e.optionalMetricEnabled("commits") {
-		commits = e.fetchRepoCommits(*repo.Owner.Login, *repo.Name)
+	if optionalMetricEnabled(opts, "commits") {
+		commits, err = fetchRepoCommits(client, owner, name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if e.optionalMetricEnabled("releases") {
-		releases, releaseDownloads = e.fetchRepoReleases(*repo.Owner.Login, *repo.Name)
+	if optionalMetricEnabled(opts, "releases") {
+		releases, releaseDownloads, err = fetchRepoReleases(client, owner, name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return OptionalRepositoryMetrics{
+	return &OptionalRepositoryMetrics{
 		PullsCount:       pulls,
 		CommitsCount:     commits,
 		Releases:         releases,
 		ReleaseDownloads: releaseDownloads,
+	}, nil
+
+}
+
+func newRepositoryMetrics(repo *github.Repository, opt *OptionalRepositoryMetrics) *RepositoryMetrics {
+
+	return &RepositoryMetrics{
+		Name:                      derefString(repo.Name),
+		Owner:                     derefString(repo.Owner.Login),
+		Archived:                  strconv.FormatBool(derefBool(repo.Archived)),
+		Private:                   strconv.FormatBool(derefBool(repo.Private)),
+		Fork:                      strconv.FormatBool(derefBool(repo.Fork)),
+		ForksCount:                float64(derefInt(repo.ForksCount)),
+		WatchersCount:             float64(derefInt(repo.WatchersCount)),
+		StargazersCount:           float64(derefInt(repo.StargazersCount)),
+		OptionalRepositoryMetrics: *opt,
+		OpenIssuesCount:           float64(derefInt(repo.OpenIssuesCount)),
+		Size:                      float64(derefInt(repo.Size)),
+		License:                   repo.License.GetKey(),
+		Language:                  derefString(repo.Language),
 	}
 
 }
 
-func (e *Exporter) stageRepositoryMetrics(repo *github.Repository, am OptionalRepositoryMetrics) {
-
-	e.Repositories = append(e.Repositories, RepositoryMetrics{
-		Name:                      e.derefString(repo.Name),
-		Owner:                     e.derefString(repo.Owner.Login),
-		Archived:                  strconv.FormatBool(e.derefBool(repo.Archived)),
-		Private:                   strconv.FormatBool(e.derefBool(repo.Private)),
-		Fork:                      strconv.FormatBool(e.derefBool(repo.Fork)),
-		ForksCount:                float64(e.derefInt(repo.ForksCount)),
-		WatchersCount:             float64(e.derefInt(repo.WatchersCount)),
-		StargazersCount:           float64(e.derefInt(repo.StargazersCount)),
-		OptionalRepositoryMetrics: am,
-		OpenIssuesCount:           float64(e.derefInt(repo.OpenIssuesCount)),
-		Size:                      float64(e.derefInt(repo.Size)),
-		License:                   repo.License.GetKey(),
-		Language:                  e.derefString(repo.Language),
-	})
-
-}
-
-func (e *Exporter) fetchOrgRepos(org string) []*github.Repository {
+func fetchOrgRepos(client *github.Client, org string, opts []string) ([]*RepositoryMetrics, error) {
 
 	// Support pagination
-	var allRepos []*github.Repository
+	var allRepos []*RepositoryMetrics
 	opt := &github.RepositoryListByOrgOptions{ListOptions: github.ListOptions{PerPage: 100}}
 
 	for {
 
-		repos, resp, err := e.Client.Repositories.ListByOrg(context.Background(), org, opt)
+		repos, resp, err := client.Repositories.ListByOrg(context.Background(), org, opt)
 		if err != nil {
-			e.Log.Errorf("Error listing repositories by org: %v", err)
+			return nil, fmt.Errorf("Error listing repositories by org: %v", err)
 		}
-		allRepos = append(allRepos, repos...)
+
+		for _, repo := range repos {
+			om, err := optionalRepositoryMetrics(client, *repo.Owner.Login, *repo.Name, opts)
+			if err != nil {
+				return nil, fmt.Errorf("Error collecting optional metrics: %v", err)
+			}
+			allRepos = append(allRepos, newRepositoryMetrics(repo, om))
+		}
+
 		if resp.NextPage == 0 {
 			break
 		}
 		opt.Page = resp.NextPage
 	}
 
-	return allRepos
+	return allRepos, nil
 
 }
 
-func (e *Exporter) fetchOrgMembers(org string) []*github.User {
+func fetchOrgMembers(client *github.Client, org string) ([]*github.User, error) {
 
 	// Support pagination
 	var allMembers []*github.User
@@ -313,9 +354,9 @@ func (e *Exporter) fetchOrgMembers(org string) []*github.User {
 
 	for {
 
-		members, resp, err := e.Client.Organizations.ListMembers(context.Background(), org, opt)
+		members, resp, err := client.Organizations.ListMembers(context.Background(), org, opt)
 		if err != nil {
-			e.Log.Errorf("Error listing members by org: %v", err)
+			return nil, fmt.Errorf("Error listing members by org: %v", err)
 		}
 
 		allMembers = append(allMembers, members...)
@@ -327,10 +368,10 @@ func (e *Exporter) fetchOrgMembers(org string) []*github.User {
 
 	}
 
-	return allMembers
+	return allMembers, nil
 }
 
-func (e *Exporter) fetchOrgCollaborators(org string) []*github.User {
+func fetchOrgCollaborators(client *github.Client, org string) ([]*github.User, error) {
 
 	// Support pagination
 	var allCollabs []*github.User
@@ -339,9 +380,9 @@ func (e *Exporter) fetchOrgCollaborators(org string) []*github.User {
 
 	for {
 
-		collabs, resp, err := e.Client.Organizations.ListOutsideCollaborators(context.Background(), org, opt)
+		collabs, resp, err := client.Organizations.ListOutsideCollaborators(context.Background(), org, opt)
 		if err != nil {
-			e.Log.Errorf("Error listing members by org: %v", err)
+			return nil, fmt.Errorf("Error listing members by org: %v", err)
 		}
 		allCollabs = append(allCollabs, collabs...)
 		if resp.NextPage == 0 {
@@ -350,10 +391,10 @@ func (e *Exporter) fetchOrgCollaborators(org string) []*github.User {
 		opt.Page = resp.NextPage
 	}
 
-	return allCollabs
+	return allCollabs, nil
 }
 
-func (e *Exporter) fetchOrgInvites(org string) []*github.Invitation {
+func fetchOrgInvites(client *github.Client, org string) ([]*github.Invitation, error) {
 
 	// Support pagination
 	var allInvites []*github.Invitation
@@ -362,9 +403,9 @@ func (e *Exporter) fetchOrgInvites(org string) []*github.Invitation {
 
 	for {
 
-		invites, resp, err := e.Client.Organizations.ListPendingOrgInvitations(context.Background(), org, opt)
+		invites, resp, err := client.Organizations.ListPendingOrgInvitations(context.Background(), org, opt)
 		if err != nil {
-			e.Log.Errorf("Error listing members by org: %v", err)
+			return nil, fmt.Errorf("Error listing members by org: %v", err)
 		}
 		allInvites = append(allInvites, invites...)
 		if resp.NextPage == 0 {
@@ -373,44 +414,41 @@ func (e *Exporter) fetchOrgInvites(org string) []*github.Invitation {
 		opt.Page = resp.NextPage
 	}
 
-	return allInvites
+	return allInvites, nil
 }
 
-func (e *Exporter) fetchUserRepos(user string) []*github.Repository {
+func fetchUserRepos(client *github.Client, user string, opts []string) ([]*RepositoryMetrics, error) {
 
 	// Support pagination
-	var allRepos []*github.Repository
+	var allRepos []*RepositoryMetrics
 	opt := &github.RepositoryListOptions{ListOptions: github.ListOptions{PerPage: 100}}
 
 	for {
 
-		repos, resp, err := e.Client.Repositories.List(context.Background(), user, opt)
+		repos, resp, err := client.Repositories.List(context.Background(), user, opt)
 		if err != nil {
-			e.Log.Errorf("Error listing repositories by user: %v", err)
+			return nil, fmt.Errorf("Error listing repositories by user: %v", err)
 		}
-		allRepos = append(allRepos, repos...)
+
+		for _, repo := range repos {
+			om, err := optionalRepositoryMetrics(client, *repo.Owner.Login, *repo.Name, opts)
+			if err != nil {
+				return nil, fmt.Errorf("Error collecting optional metrics: %v", err)
+			}
+			allRepos = append(allRepos, newRepositoryMetrics(repo, om))
+		}
+
 		if resp.NextPage == 0 {
 			break
 		}
 		opt.Page = resp.NextPage
 	}
 
-	return allRepos
+	return allRepos, nil
 
 }
 
-func (e *Exporter) fetchIndividualRepo(owner, repo string) *github.Repository {
-
-	// collect basic repository information for the repo
-	r, _, err := e.Client.Repositories.Get(context.Background(), owner, repo)
-	if err != nil {
-		e.Log.Errorf("Error collecting repository metrics: %v", err)
-	}
-
-	return r
-}
-
-func (e *Exporter) fetchRepoPulls(owner, repo string) float64 {
+func fetchRepoPulls(client *github.Client, owner, repo string) (float64, error) {
 
 	// Support pagination
 	var totalPulls []*github.PullRequest
@@ -418,9 +456,9 @@ func (e *Exporter) fetchRepoPulls(owner, repo string) float64 {
 
 	for {
 
-		p, resp, err := e.Client.PullRequests.List(context.Background(), owner, repo, opt)
+		p, resp, err := client.PullRequests.List(context.Background(), owner, repo, opt)
 		if err != nil {
-			e.Log.Errorf("Error obtaining pull metrics: %v", err)
+			return 0.0, fmt.Errorf("Error obtaining pull metrics: %v", err)
 		}
 
 		totalPulls = append(totalPulls, p...)
@@ -430,11 +468,11 @@ func (e *Exporter) fetchRepoPulls(owner, repo string) float64 {
 		opt.Page = resp.NextPage
 	}
 
-	return float64(len(totalPulls))
+	return float64(len(totalPulls)), nil
 
 }
 
-func (e *Exporter) fetchRepoCommits(owner, repo string) float64 {
+func fetchRepoCommits(client *github.Client, owner, repo string) (float64, error) {
 
 	// Support pagination
 	var totalCommits []*github.RepositoryCommit
@@ -442,9 +480,9 @@ func (e *Exporter) fetchRepoCommits(owner, repo string) float64 {
 
 	for {
 
-		c, resp, err := e.Client.Repositories.ListCommits(context.Background(), owner, repo, opt)
+		c, resp, err := client.Repositories.ListCommits(context.Background(), owner, repo, opt)
 		if err != nil {
-			e.Log.Errorf("Error obtaining commit metrics: %v", err)
+			return 0.0, fmt.Errorf("Error obtaining commit metrics: %v", err)
 		}
 
 		totalCommits = append(totalCommits, c...)
@@ -454,11 +492,11 @@ func (e *Exporter) fetchRepoCommits(owner, repo string) float64 {
 		opt.Page = resp.NextPage
 	}
 
-	return float64(len(totalCommits))
+	return float64(len(totalCommits)), nil
 
 }
 
-func (e *Exporter) fetchRepoReleases(owner, repo string) (float64, []RepoReleaseDownloads) {
+func fetchRepoReleases(client *github.Client, owner, repo string) (float64, []RepoReleaseDownloads, error) {
 
 	// Support pagination
 	var releases []*github.RepositoryRelease
@@ -468,18 +506,15 @@ func (e *Exporter) fetchRepoReleases(owner, repo string) (float64, []RepoRelease
 
 	for {
 
-		r, resp, err := e.Client.Repositories.ListReleases(context.Background(), owner, repo, opt)
+		r, resp, err := client.Repositories.ListReleases(context.Background(), owner, repo, opt)
 		if err != nil {
-			e.Log.Errorf("Error obtaining release metrics: %v", err)
+			return 0.0, nil, fmt.Errorf("Error obtaining release metrics: %v", err)
 		}
 
 		releases = append(releases, r...)
-		e.Log.Info("In Loop 1")
 		for _, y := range r {
-			e.Log.Info("In Loop 2, length of assets: ", len(y.Assets))
 
 			for _, x := range y.Assets {
-				e.Log.Info("In Loop 3")
 
 				downloads = append(downloads, RepoReleaseDownloads{
 					ReleaseName:   y.GetName(),
@@ -495,6 +530,6 @@ func (e *Exporter) fetchRepoReleases(owner, repo string) (float64, []RepoRelease
 		opt.Page = resp.NextPage
 	}
 
-	return float64(len(releases)), downloads
+	return float64(len(releases)), downloads, nil
 
 }

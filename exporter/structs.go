@@ -11,14 +11,10 @@ import (
 // This is done so that the relevant functions have easy access to the
 // user defined runtime configuration when the Collect method is called.
 type Exporter struct {
-	Metrics        map[string]*prometheus.Desc
-	Config         config.Config
-	Log            *logrus.Logger
-	Client         *github.Client
-	Repositories   []RepositoryMetrics
-	ProcessedRepos []ProcessedRepos
-	Organisations  []OrganisationMetrics
-	RateLimits     RateMetrics
+	Metrics map[string]*prometheus.Desc
+	Config  config.Config
+	Log     *logrus.Logger
+	Client  *github.Client
 }
 
 // RepositoryMetrics defines our repository metric footprint

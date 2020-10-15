@@ -1,11 +1,26 @@
 package exporter
 
 import (
+	conf "github.com/infinityworks/github-exporter/config"
+	"github.com/sirupsen/logrus"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// AddMetrics - Add's all of the metrics to a map of strings, returns the map.
-func AddMetrics() map[string]*prometheus.Desc {
+// New returns an initialized Exporter.
+func New(c conf.Config, log *logrus.Logger) *Exporter {
+
+	return &Exporter{
+		Metrics: addMetrics(),
+		Config:  c,
+		Log:     log,
+		Client:  newClient(c.APIToken),
+	}
+
+}
+
+// addMetrics - Add's all of the metrics to a map of strings, returns the map.
+func addMetrics() map[string]*prometheus.Desc {
 
 	Metrics := make(map[string]*prometheus.Desc)
 
@@ -88,7 +103,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	return Metrics
 }
 
-func (e *Exporter) derefString(s *string) string {
+func derefString(s *string) string {
 
 	if s != nil {
 		return *s
@@ -97,73 +112,21 @@ func (e *Exporter) derefString(s *string) string {
 	return ""
 }
 
-func (e *Exporter) derefBool(b *bool) bool {
+func derefBool(b *bool) bool {
 
 	if b != nil {
 		return *b
 	}
 
-	e.Log.Info("Bool nil, defaulting to false")
-
 	return false
 }
 
-func (e *Exporter) derefInt(i *int) int {
+func derefInt(i *int) int {
 
 	if i != nil {
 		return *i
 	}
 
-	e.Log.Info("Int nil, defaulting to 0")
-
 	return 0
-
-}
-
-// processMetrics - processes the response data and sets the metrics using it as a source
-func (e *Exporter) processMetrics(ch chan<- prometheus.Metric) {
-
-	// Range through Repository metrics
-	for _, x := range e.Repositories {
-		ch <- prometheus.MustNewConstMetric(e.Metrics["Stars"], prometheus.GaugeValue, x.StargazersCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["Forks"], prometheus.GaugeValue, x.ForksCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["Watchers"], prometheus.GaugeValue, x.WatchersCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		ch <- prometheus.MustNewConstMetric(e.Metrics["OpenIssues"], prometheus.GaugeValue, x.OpenIssuesCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-
-		if e.optionalMetricEnabled("pulls") {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["PullRequests"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.PullsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		}
-		if e.optionalMetricEnabled("releases") {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["Releases"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.Releases, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-
-			for _, y := range x.OptionalRepositoryMetrics.ReleaseDownloads {
-				ch <- prometheus.MustNewConstMetric(e.Metrics["ReleaseDownloads"], prometheus.GaugeValue, y.DownloadCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language, y.ReleaseName, y.AssetName, y.CreatedAt)
-			}
-		}
-		if e.optionalMetricEnabled("commits") {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["Commits"], prometheus.GaugeValue, x.OptionalRepositoryMetrics.CommitsCount, x.Name, x.Owner, x.Private, x.Fork, x.Archived, x.License, x.Language)
-		}
-	}
-
-	if len(e.Organisations) > 0 {
-		for _, y := range e.Organisations {
-			ch <- prometheus.MustNewConstMetric(e.Metrics["MembersCount"], prometheus.GaugeValue, y.MembersCount, y.Name)
-			ch <- prometheus.MustNewConstMetric(e.Metrics["OutsideCollaboratorsCount"], prometheus.GaugeValue, y.OutsideCollaboratorsCount, y.Name)
-			ch <- prometheus.MustNewConstMetric(e.Metrics["PendingOrgInvitationsCount"], prometheus.GaugeValue, y.PendingOrgInvitationsCount, y.Name)
-		}
-
-	}
-
-	// Set Rate limit stats
-	ch <- prometheus.MustNewConstMetric(e.Metrics["Limit"], prometheus.GaugeValue, e.RateLimits.Limit)
-	ch <- prometheus.MustNewConstMetric(e.Metrics["Remaining"], prometheus.GaugeValue, e.RateLimits.Remaining)
-	ch <- prometheus.MustNewConstMetric(e.Metrics["Reset"], prometheus.GaugeValue, e.RateLimits.Reset)
-
-	// Clear Exporter, avoids multiple captures
-	e.Repositories = nil
-	e.ProcessedRepos = nil
-	e.Organisations = nil
-	e.Client = nil
 
 }

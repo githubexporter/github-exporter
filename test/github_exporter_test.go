@@ -36,16 +36,13 @@ func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
 
 	log = logger.Start(conf.Config)
 
-	exp := exporter.Exporter{
-		Metrics: exporter.AddMetrics(),
-		Config:  conf,
-		Log:     log,
-	}
+	exp := exporter.New(conf, log)
+
 	server := web.NewServer(exp)
 
 	return apitest.New().
 		Report(apitest.SequenceDiagram()).
-		Handler(server.Handler), exp
+		Handler(server.Handler), *exp
 }
 
 func withConfig(repos string) config.Config {

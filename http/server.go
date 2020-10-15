@@ -11,15 +11,15 @@ import (
 
 type Server struct {
 	Handler  http.Handler
-	exporter exporter.Exporter
+	exporter *exporter.Exporter
 }
 
-func NewServer(exporter exporter.Exporter) *Server {
+func NewServer(exporter *exporter.Exporter) *Server {
 	r := http.NewServeMux()
 
 	// Register Metrics from each of the endpoints
 	// This invokes the Collect method through the prometheus client libraries.
-	prometheus.MustRegister(&exporter)
+	prometheus.MustRegister(exporter)
 
 	r.Handle(exporter.Config.Config.MetricsPath(), promhttp.Handler())
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
