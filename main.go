@@ -19,15 +19,16 @@ var (
 func init() {
 	applicationCfg = conf.Init()
 	mets = exporter.AddMetrics()
-	log = logger.Start(&applicationCfg)
+	log = logger.Start(applicationCfg.Config)
 }
 
 func main() {
 	log.WithFields(structs.Map(applicationCfg)).Info("Starting Exporter")
 
 	exp := exporter.Exporter{
-		APIMetrics: mets,
-		Config:     applicationCfg,
+		Metrics: mets,
+		Config:  applicationCfg,
+		Log:     log,
 	}
 
 	http.NewServer(exp).Start()

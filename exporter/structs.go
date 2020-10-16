@@ -1,77 +1,83 @@
 package exporter
 
 import (
-	"net/http"
-
+	"github.com/google/go-github/github"
 	"github.com/infinityworks/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sirupsen/logrus"
 )
 
 // Exporter is used to store Metrics data and embeds the config struct.
 // This is done so that the relevant functions have easy access to the
 // user defined runtime configuration when the Collect method is called.
 type Exporter struct {
-	APIMetrics map[string]*prometheus.Desc
-	config.Config
+	Metrics        map[string]*prometheus.Desc
+	Config         config.Config
+	Log            *logrus.Logger
+	Client         *github.Client
+	Repositories   []RepositoryMetrics
+	ProcessedRepos []ProcessedRepos
+	Organisations  []OrganisationMetrics
+	RateLimits     RateMetrics
 }
 
-// Data is used to store an array of Datums.
-// This is useful for the JSON array detection
-type Data []Datum
-
-// Datum is used to store data from all the relevant endpoints in the API
-type Datum struct {
-	Name  string `json:"name"`
-	Owner struct {
-		Login string `json:"login"`
-	} `json:"owner"`
-	License struct {
-		Key string `json:"key"`
-	} `json:"license"`
-	Language   string  `json:"language"`
-	Archived   bool    `json:"archived"`
-	Private    bool    `json:"private"`
-	Fork       bool    `json:"fork"`
-	Forks      float64 `json:"forks"`
-	Stars      float64 `json:"stargazers_count"`
-	OpenIssues float64 `json:"open_issues"`
-	Watchers   float64 `json:"subscribers_count"`
-	Size       float64 `json:"size"`
-	Releases   []Release
-	Pulls      []Pull
+// RepositoryMetrics defines our repository metric footprint
+// Similar to the standard github library but value based and not pointers
+// Also this includes the additional metrics we capture outside the standard return
+// from the github API
+type RepositoryMetrics struct {
+	Name                      string
+	Owner                     string
+	Archived                  string
+	Private                   string
+	Fork                      string
+	ForksCount                float64
+	WatchersCount             float64
+	StargazersCount           float64
+	OpenIssuesCount           float64
+	Size                      float64
+	License                   string
+	Language                  string
+	OptionalRepositoryMetrics OptionalRepositoryMetrics
 }
 
-type Release struct {
-	Name   string  `json:"name"`
-	Assets []Asset `json:"assets"`
+// OptionalRepositoryMetrics is used to track metrics not available through
+// standard api endpoints in the v3 API. Usage of these endpoints is though
+// very expensive, increasing the API calls used significantly
+type OptionalRepositoryMetrics struct {
+	PullsCount       float64
+	CommitsCount     float64
+	Releases         float64
+	ReleaseDownloads []RepoReleaseDownloads
 }
 
-type Pull struct {
-	Url  string `json:"url"`
-	User struct {
-		Login string `json:"login"`
-	} `json:"user"`
+// RepoReleaseDownloads tracks release metrics on a per-release level of granularity
+type RepoReleaseDownloads struct {
+	ReleaseName   string
+	AssetName     string
+	CreatedAt     string
+	DownloadCount float64
 }
 
-type Asset struct {
-	Name      string `json:"name"`
-	Size      int64  `json:"size"`
-	Downloads int32  `json:"download_count"`
-	CreatedAt string `json:"created_at"`
-}
-
-// RateLimits is used to store rate limit data into a struct
-// This data is later represented as a metric, captured at the end of a scrape
-type RateLimits struct {
+// RateMetrics help us monitor performance against the
+// GitHub API Rate limits imposed
+type RateMetrics struct {
 	Limit     float64
 	Remaining float64
 	Reset     float64
 }
 
-// Response struct is used to store http.Response and associated data
-type Response struct {
-	url      string
-	response *http.Response
-	body     []byte
-	err      error
+// OrganisationMetrics helps us capture metrics specific to our organisations
+// We simply miss when focussing in on repositories alone
+type OrganisationMetrics struct {
+	Name                       string
+	MembersCount               float64
+	OutsideCollaboratorsCount  float64
+	PendingOrgInvitationsCount float64
+}
+
+// ProcessedRepos is used to help track and avoid duplicate repository collection of metrics
+type ProcessedRepos struct {
+	Owner string
+	Name  string
 }
