@@ -21,6 +21,7 @@ type Config struct {
 	Users         string
 	APITokenEnv   string
 	APITokenFile  string
+	Account       string
 	APIToken      string
 	TargetURLs    []string
 }
@@ -37,6 +38,7 @@ func Init() Config {
 	users := os.Getenv("USERS")
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
+	account := os.Getenv("GITHUB_ACCOUNT")
 	token, err := getAuth(tokenEnv, tokenFile)
 	scraped, err := getScrapeURLs(url, repos, orgs, users)
 
@@ -52,6 +54,7 @@ func Init() Config {
 		users,
 		tokenEnv,
 		tokenFile,
+		account,
 		token,
 		scraped,
 	}
