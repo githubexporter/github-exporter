@@ -2,16 +2,17 @@ package test
 
 import (
 	"fmt"
-	"github.com/infinityworks/github-exporter/config"
-	"github.com/infinityworks/github-exporter/exporter"
-	web "github.com/infinityworks/github-exporter/http"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/steinfletcher/apitest"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/infinityworks/github-exporter/config"
+	"github.com/infinityworks/github-exporter/exporter"
+	web "github.com/infinityworks/github-exporter/http"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinfletcher/apitest"
 )
 
 func TestHomepage(t *testing.T) {
@@ -41,7 +42,7 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_rate_remaining 60`)).
 		Assert(bodyContains(`github_rate_reset 1.566853865e+09`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 10`)).
-		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo"} 3`)).
+		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo",user="myOrg"} 3`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 2`)).
 		Assert(bodyContains(`github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 946`)).
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
