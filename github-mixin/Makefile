@@ -2,7 +2,7 @@ JSONNET_FMT := jsonnetfmt -n 2 --max-blank-lines 2 --string-style s --comment-st
 
 default: build
 
-all: fmt lint install build 
+all: install fmt lint build 
 
 fmt:
 	find . -name 'vendor' -prune -o -name '*.libsonnet' -print -o -name '*.jsonnet' -print | \

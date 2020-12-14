@@ -13,7 +13,7 @@ script:
   - diff -u <(echo -n) <(gofmt -s -d ./)
   - diff -u <(echo -n) <(go vet ./...)
   - go test -v ./...
-  - make -C github-mixin lint install build
+  - make -C github-mixin install lint build
 
 env:
   - GO111MODULE=on
