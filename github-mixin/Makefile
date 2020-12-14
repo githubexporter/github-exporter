@@ -2,7 +2,7 @@ JSONNET_FMT := jsonnetfmt -n 2 --max-blank-lines 2 --string-style s --comment-st
 
 default: build
 
-all: fmt lint build clean
+all: fmt lint install build 
 
 fmt:
 	find . -name 'vendor' -prune -o -name '*.libsonnet' -print -o -name '*.jsonnet' -print | \
@@ -16,7 +16,10 @@ lint:
 
 	mixtool lint mixin.libsonnet
 
-build:
+install:
+	jb install
+
+build:	
 	mixtool generate dashboards mixin.libsonnet -d dashboards_out
 
 clean:
