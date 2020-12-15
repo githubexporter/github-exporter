@@ -35,7 +35,7 @@ grafana.dashboard.new('GitHub API Usage', uid='github-api-usage', editable=true)
 
     common.latestSingleStatPanel('Current Max Requests Per Hour')
     .addTarget(grafana.prometheus.target('github_rate_limit')) +
-    { gridPos: { x: 0, y: 4, w: 8, h: 5 } },
+    { gridPos: { x: 0, y: 9, w: 8, h: 5 } },
 
   ]
 )
