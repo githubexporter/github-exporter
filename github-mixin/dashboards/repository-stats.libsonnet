@@ -22,14 +22,19 @@ local graphPanel(metric) =
   )
   .addTarget(grafana.prometheus.target(metric.name + '{user=~"$user",repo=~"$repo"}'));
 
+// Calculates positions of an array of panels which have the same dimensions and
+// should be displayed together.
+// Assumes the area above startY has been "filled in" - Grafana moves panels up
+// automatically if there is empty space.
 local setGridPos(panels, startY, panelWidth, panelHeight) =
   if panelWidth > dashboardWidth then
     error 'panelWidth cannot be larger than dashboardWidth'
   else
+    local panelsPerRow = std.floor(dashboardWidth / panelWidth);
     local calculate(index) = {
       gridPos: {
-        x: (index % std.floor(dashboardWidth / panelWidth)) * panelWidth,
-        y: startY + std.floor((index * panelWidth) / dashboardWidth),
+        x: (index % panelsPerRow) * panelWidth,
+        y: startY + (std.floor(index / panelsPerRow) * panelHeight),
         w: panelWidth,
         h: panelHeight,
       },
