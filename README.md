@@ -10,6 +10,8 @@ This exporter is setup to take input from environment variables. All variables a
 
 * `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2".
 * `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
+* `PR_QUERY_OPTIONS` if supplied, added as [query options](https://docs.github.com/en/rest/reference/pulls#list-pull-requests) to list pulls request.
+* `PR_LONG_RUNNING_TIME_DIFF` Time threshold in hours beyond which PRs are considered long running. Default is 2 weeks ie 336 hours.
 * `USERS` If supplied, the exporter will enumerate all repositories for that users. Expected in
 the format "user1, user2".
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
@@ -50,6 +52,8 @@ github-exporter:
 
 ```
 
+## Kubernetes deployment
+Follow the instructions provided in [README.md](helm/github-exporter/README.md)
 ## Metrics
 
 Metrics will be made available on port 9171 by default

@@ -1,7 +1,11 @@
 package exporter
 
-import "github.com/prometheus/client_golang/prometheus"
-import "strconv"
+import (
+	"strconv"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 // AddMetrics - Add's all of the metrics to a map of strings, returns the map.
 func AddMetrics() map[string]*prometheus.Desc {
@@ -18,11 +22,19 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Total number of open issues for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
+
 	APIMetrics["PullRequestCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "pull_request_count"),
 		"Total number of pull requests for given repository",
-		[]string{"repo"}, nil,
+		[]string{"repo", "user", "language"}, nil,
 	)
+
+	APIMetrics["PullRequestLongRunningCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "pull_request_long_running_count"),
+		"Total number of long running pull requests for given repository",
+		[]string{"repo", "user", "language"}, nil,
+	)
+
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
 		"Total number of watchers/subscribers for given repository",
@@ -65,6 +77,9 @@ func AddMetrics() map[string]*prometheus.Desc {
 // processMetrics - processes the response data and sets the metrics using it as a source
 func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- prometheus.Metric) error {
 
+	currentTime := time.Now()
+	longRunningPRsTimeDiff := e.Config.PRLongRunningTimeDiff
+
 	// APIMetrics - range through the data slice
 	for _, x := range data {
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Stars"], prometheus.GaugeValue, x.Stars, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
@@ -77,15 +92,44 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, release.Name, asset.Name, asset.CreatedAt)
 			}
 		}
+
 		prCount := 0
-		for range x.Pulls {
-			prCount += 1
+		prLongRunning := 0
+		for _, pull := range x.Pulls {
+			prCount++
+			if currentTime.Sub(pull.CreaatedAt).Hours() > longRunningPRsTimeDiff {
+				prLongRunning++
+			}
 		}
+		// fmt.Printf("prCount: %d | prLongRunning: %d ", prCount, prLongRunning)
+
 		// issueCount = x.OpenIssue - prCount
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, (x.OpenIssues - float64(prCount)), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"],
+			prometheus.GaugeValue,
+			x.OpenIssues,
+			x.Name,
+			x.Owner.Login,
+			strconv.FormatBool(x.Private),
+			strconv.FormatBool(x.Fork),
+			strconv.FormatBool(x.Archived),
+			x.License.Key,
+			x.Language)
 
 		// prCount
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"],
+			prometheus.GaugeValue,
+			float64(prCount),
+			x.Name,
+			x.Owner.Login,
+			x.Language)
+
+		// prCount
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestLongRunningCount"],
+			prometheus.GaugeValue,
+			float64(prLongRunning),
+			x.Name,
+			x.Owner.Login,
+			x.Language)
 	}
 
 	// Set Rate limit stats
