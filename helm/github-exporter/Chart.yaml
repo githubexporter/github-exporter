@@ -1,0 +1,13 @@
+apiVersion: v2
+name: github-exporter
+description: GitHub metrics exporter for Prometheus
+
+maintainers: 
+  - name: Dimitar Georgievski
+    email: dgeorgievski@gmail.com
+
+type: application
+
+version: 0.1.0
+
+appVersion: 1.0.2

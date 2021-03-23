@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/infinityworks/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
@@ -46,11 +47,16 @@ type Release struct {
 	Assets []Asset `json:"assets"`
 }
 
+// Pull define PR request stats
 type Pull struct {
 	Url  string `json:"url"`
 	User struct {
 		Login string `json:"login"`
 	} `json:"user"`
+	Number     int       `json:"number"`
+	State      string    `json:"state"`
+	CreaatedAt time.Time `json:"created_at"`
+	UpdateddAt time.Time `json:"updated_at"`
 }
 
 type Asset struct {

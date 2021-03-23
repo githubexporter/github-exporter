@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -12,17 +13,24 @@ import (
 	cfg "github.com/infinityworks/go-common/config"
 )
 
+var (
+	prQueryOptionDefault string = "per_page=100&sort=long-running&direction=descending"
+)
+
 // Config struct holds all of the runtime confgiguration for the application
 type Config struct {
 	*cfg.BaseConfig
-	APIURL        string
-	Repositories  string
-	Organisations string
-	Users         string
-	APITokenEnv   string
-	APITokenFile  string
-	APIToken      string
-	TargetURLs    []string
+	APIURL                string
+	Repositories          string
+	Organisations         string
+	Users                 string
+	APITokenEnv           string
+	APITokenFile          string
+	APIToken              string
+	TargetURLs            []string
+	PRLongRunningTimeDiff float64 //  Now - PR created time in hours; Above this PR considered to be long running
+	PRQueryOptions        string  // API query options for /pulls
+
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -39,6 +47,9 @@ func Init() Config {
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	token, err := getAuth(tokenEnv, tokenFile)
 	scraped, err := getScrapeURLs(url, repos, orgs, users)
+	// default for long running PRs is 2 weeks
+	prLongRunningTimeDiff, err := strconv.ParseFloat(cfg.GetEnv("PR_LONG_RUNNING_TIME_DIFF", "336"), 64)
+	prQueryOptions := cfg.GetEnv("PR_QUERY_OPTIONS", prQueryOptionDefault)
 
 	if err != nil {
 		log.Errorf("Error initialising Configuration, Error: %v", err)
@@ -54,6 +65,8 @@ func Init() Config {
 		tokenFile,
 		token,
 		scraped,
+		prLongRunningTimeDiff,
+		prQueryOptions,
 	}
 
 	return appConfig

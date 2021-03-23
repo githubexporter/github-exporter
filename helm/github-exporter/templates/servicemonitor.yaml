@@ -1,0 +1,21 @@
+{{- if .Values.prometheus.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "github-exporter.fullname" . }}
+  namespace: {{ .Values.prometheus.serviceMonitor.namespace }}
+  labels:
+    app: {{ template "github-exporter.name" . }}
+    release: kube-prometheus-stack
+{{ include "github-exporter.labels" . | indent 4 }}
+spec:
+  endpoints:
+  - path: /metrics
+    port: http
+  namespaceSelector:
+    matchNames:
+    - exporters
+  selector:
+    matchLabels:
+      {{- include "github-exporter.selectorLabels" . | nindent 6 }}
+{{- end }}

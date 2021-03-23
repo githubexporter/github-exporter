@@ -111,14 +111,27 @@ func getReleases(e *Exporter, url string, data *[]Release) {
 func getPRs(e *Exporter, url string, data *[]Pull) {
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
-	pullsURL := baseURL + "/pulls"
-	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken)
+	pullsURL := strings.Builder{}
+	pullsURL.WriteString(baseURL)
+	pullsURL.WriteString("/pulls")
+	if len(strings.TrimSpace(e.PRQueryOptions)) > 0 {
+		if !strings.HasPrefix(e.PRQueryOptions, "?") {
+			pullsURL.WriteString("?")
+		}
+		pullsURL.WriteString(e.PRQueryOptions)
+	}
+
+	pullsResponse, err := asyncHTTPGets([]string{pullsURL.String()}, e.APIToken)
 
 	if err != nil {
 		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
 	}
 
-	json.Unmarshal(pullsResponse[0].body, &data)
+	for _, resp := range pullsResponse {
+		var dtPull []Pull
+		json.Unmarshal(resp.body, &dtPull)
+		*data = append(*data, dtPull...)
+	}
 }
 
 // isArray simply looks for key details that determine if the JSON response is an array or not.

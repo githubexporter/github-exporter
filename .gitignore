@@ -1,1 +1,6 @@
 .sequence
+.vscode/
+build/
+/github-exporter
+
+.DS_Store
