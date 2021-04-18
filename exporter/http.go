@@ -146,6 +146,7 @@ func getHTTPResponse(url string, token string) (*http.Response, error) {
 
 	// check rate limit exceeded.
 	if resp.Status == RateLimitExceededStatus {
+		resp.Body.Close()
 		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
