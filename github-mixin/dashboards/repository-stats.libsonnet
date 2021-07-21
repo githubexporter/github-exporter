@@ -7,6 +7,7 @@ local metric(metric_name, title, format='none') = {
   name: metric_name,
   title: title,
   format: format,
+  datasource: '$datasource',
 };
 
 local latestRepoStatPanel(metric) =
@@ -18,7 +19,8 @@ local graphPanel(metric) =
     metric.title,
     min=0,
     legend_show=false,
-    format=metric.format
+    format=metric.format,
+    datasource='$datasource',
   )
   .addTarget(grafana.prometheus.target(metric.name + '{user=~"$user",repo=~"$repo"}'));
 

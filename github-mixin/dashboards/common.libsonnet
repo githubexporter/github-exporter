@@ -2,7 +2,7 @@ local grafana = import 'github.com/grafana/grafonnet-lib/grafonnet/grafana.libso
 
 {
   latestSingleStatPanel(title, format='none')::
-    grafana.statPanel.new(title, reducerFunction='last', graphMode='none') +
+    grafana.statPanel.new(title, reducerFunction='last', graphMode='none', datasource='$datasource') +
     {
       fieldConfig: {
         defaults: {
