@@ -21,7 +21,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	data := []*Datum{}
 	var err error
 	// Scrape the Data from Github
-	if len(e.TargetURLs) > 0 {
+	if len(e.TargetURLs()) > 0 {
 		data, err = e.gatherData()
 		if err != nil {
 			log.Errorf("Error gathering Data from remote API: %v", err)
