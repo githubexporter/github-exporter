@@ -3,6 +3,7 @@ package exporter
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
@@ -14,7 +15,7 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 
 	data := []*Datum{}
 
-	responses, err := asyncHTTPGets(e.TargetURLs, e.APIToken)
+	responses, err := asyncHTTPGets(e.TargetURLs(), e.APIToken())
 
 	if err != nil {
 		return data, err
@@ -54,11 +55,10 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 // getRates obtains the rate limit data for requests against the github API.
 // Especially useful when operating without oauth and the subsequent lower cap.
 func (e *Exporter) getRates() (*RateLimits, error) {
+	u := *e.APIURL()
+	u.Path = path.Join(u.Path, "rate_limit")
 
-	rateEndPoint := ("/rate_limit")
-	url := fmt.Sprintf("%s%s", e.APIURL, rateEndPoint)
-
-	resp, err := getHTTPResponse(url, e.APIToken)
+	resp, err := getHTTPResponse(u.String(), e.APIToken())
 	if err != nil {
 		return &RateLimits{}, err
 	}
@@ -99,7 +99,7 @@ func getReleases(e *Exporter, url string, data *[]Release) {
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
 	releasesURL := baseURL + "/releases"
-	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.APIToken)
+	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.APIToken())
 
 	if err != nil {
 		log.Errorf("Unable to obtain releases from API, Error: %s", err)
@@ -112,7 +112,7 @@ func getPRs(e *Exporter, url string, data *[]Pull) {
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
 	pullsURL := baseURL + "/pulls"
-	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken)
+	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken())
 
 	if err != nil {
 		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
