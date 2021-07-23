@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	neturl "net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -72,17 +72,23 @@ func paginateTargets(targets []string, token string) []string {
 			for _, link := range links {
 				if link.Rel == "last" {
 
-					subs := strings.Split(link.URL, "&page=")
+					u, err := neturl.Parse(link.URL)
+					if err != nil {
+						log.Errorf("Unable to parse page URL, Error: %s", err)
+					}
 
-					lastPage, err := strconv.Atoi(subs[len(subs)-1])
+					q := u.Query()
+
+					lastPage, err := strconv.Atoi(q.Get("page"))
 					if err != nil {
 						log.Errorf("Unable to convert page substring to int, Error: %s", err)
 					}
 
 					// add all pages to the slice of targets to return
 					for page := 2; page <= lastPage; page++ {
-						pageURL := fmt.Sprintf("%s&page=%v", url, page)
-						paginated = append(paginated, pageURL)
+						q.Set("page", strconv.Itoa(page))
+						u.RawQuery = q.Encode()
+						paginated = append(paginated, u.String())
 					}
 
 					break
