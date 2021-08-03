@@ -3,10 +3,17 @@ language: go
 go:
   - "1.14"
 
+before_script:
+  # For mixin
+  - go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb
+  - go install github.com/monitoring-mixins/mixtool/cmd/mixtool
+  - go install github.com/google/go-jsonnet/cmd/jsonnetfmt
+
 script:
   - diff -u <(echo -n) <(gofmt -s -d ./)
   - diff -u <(echo -n) <(go vet ./...)
   - go test -v ./...
+  - make -C github-mixin install lint build
 
 env:
   - GO111MODULE=on

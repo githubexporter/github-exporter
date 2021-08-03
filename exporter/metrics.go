@@ -1,7 +1,10 @@
 package exporter
 
-import "github.com/prometheus/client_golang/prometheus"
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 // AddMetrics - Add's all of the metrics to a map of strings, returns the map.
 func AddMetrics() map[string]*prometheus.Desc {
@@ -21,7 +24,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["PullRequestCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "pull_request_count"),
 		"Total number of pull requests for given repository",
-		[]string{"repo"}, nil,
+		[]string{"repo", "user"}, nil,
 	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
@@ -85,7 +88,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, (x.OpenIssues - float64(prCount)), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 
 		// prCount
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login)
 	}
 
 	// Set Rate limit stats
