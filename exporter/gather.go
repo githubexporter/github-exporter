@@ -11,7 +11,7 @@ import (
 	log "github.com/benri-io/jira-exporter/logger"
 )
 
-// gatherData - Collects the data from the API and stores into struct
+// gatherData - jCollects the data from the API and stores into struct
 func (e *Exporter) gatherData() ([]*Datum, error) {
 
 	log.GetDefaultLogger().Info("Gathering Data with %d targets", len(e.TargetURLs()))
@@ -100,7 +100,7 @@ func (e *Exporter) getRates() (*RateLimits, error) {
 }
 
 type JQLRequest struct {
-	JQL          string   `jql`
+	JQL          string   `json:"jql"`
 	MaxResults   int      `json:"maxResults"`
 	FieldsByKeys bool     `json:"fieldsByKeys"`
 	Fields       []string `json:"fields"`
@@ -120,7 +120,7 @@ func getIssues(e *Exporter, url string, data *[]IssueMetric) {
 	req := []PostRequest{PostRequest{
 		target: issuesURL,
 		data: JQLRequest{
-			JQL:          fmt.Sprintf("(updated >= -%dh and status CHANGED) or (created >= -%dh)", 6, 6),
+			JQL:          fmt.Sprintf("(updated >= -%dh and status CHANGED) or (created >= -%dh)", 24, 24),
 			MaxResults:   -1,
 			FieldsByKeys: false,
 			Fields:       []string{"*all"},
@@ -132,6 +132,10 @@ func getIssues(e *Exporter, url string, data *[]IssueMetric) {
 	issueResponse, err := asyncHTTPPosts(req, e.User(), e.APIToken())
 	if err != nil {
 		logger.GetDefaultLogger().Errorf("Unable to obtain issues from API, Error: %s", err)
+	}
+	dat, _ := json.Marshal(issueResponse)
+	if dat != nil {
+		logger.GetDefaultLogger().Infof("Got response: %v", string(dat))
 	}
 	json.Unmarshal(issueResponse[0].body, &data)
 

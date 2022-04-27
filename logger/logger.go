@@ -24,7 +24,10 @@ func MakeLoggerMap() (l *LoggerMap) {
 
 func Start(config config.AppConfig) (logger *log.Logger) {
 	logger = log.New()
-	logger.Formatter = &log.JSONFormatter{}
+	//	logger.Formatter = &log.JSONFormatter{
+	//DisableColors: false,
+	//FullTimestamp: false,
+	//}
 	setLogLevel(config.LogLevel(), logger)
 	return logger
 }

@@ -164,7 +164,7 @@ func postResponse(url string, data interface{}, token, user string, ch chan<- *R
 
 	resp, err := postHTTPResponse(url, data, token, user) // do this earlier
 	if err != nil {
-		return fmt.Errorf("Error fetching http response: %v", err)
+		return fmt.Errorf("Error during post: %v", err)
 	}
 	defer resp.Body.Close()
 
@@ -245,6 +245,14 @@ func postHTTPResponse(url string, data interface{}, token, user string) (*http.R
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
+	}
+
+	log.GetDefaultLogger().Infof("Got response: %v", resp.Status)
+
+	// check rate limit exceeded.
+	if resp.StatusCode != 200 {
+		resp.Body.Close()
+		return nil, fmt.Errorf("%s", resp.Status)
 	}
 
 	// check rate limit exceeded.
