@@ -3,7 +3,7 @@ package exporter
 import (
 	"net/http"
 
-	"github.com/infinityworks/github-exporter/config"
+	"github.com/benri-io/jira-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -21,43 +21,20 @@ type Data []Datum
 
 // Datum is used to store data from all the relevant endpoints in the API
 type Datum struct {
-	Name  string `json:"name"`
-	Owner struct {
-		Login string `json:"login"`
-	} `json:"owner"`
-	License struct {
-		Key string `json:"key"`
-	} `json:"license"`
-	Language   string  `json:"language"`
-	Archived   bool    `json:"archived"`
-	Private    bool    `json:"private"`
-	Fork       bool    `json:"fork"`
-	Forks      float64 `json:"forks"`
-	Stars      float64 `json:"stargazers_count"`
-	OpenIssues float64 `json:"open_issues"`
-	Watchers   float64 `json:"subscribers_count"`
-	Size       float64 `json:"size"`
-	Releases   []Release
-	Pulls      []Pull
+	Issues []IssuesMetric
 }
 
-type Release struct {
-	Name   string  `json:"name"`
-	Assets []Asset `json:"assets"`
-}
-
-type Pull struct {
-	Url  string `json:"url"`
-	User struct {
-		Login string `json:"login"`
-	} `json:"user"`
-}
-
-type Asset struct {
-	Name      string `json:"name"`
-	Size      int64  `json:"size"`
-	Downloads int32  `json:"download_count"`
-	CreatedAt string `json:"created_at"`
+type IssueMetric struct {
+	Project   string
+	Epic      string
+	Owner     string
+	Creator   string
+	IssueType string
+	Assigned  string
+	Status    string
+	Priority  string
+	Labels    []string
+	Votes     int8
 }
 
 // RateLimits is used to store rate limit data into a struct

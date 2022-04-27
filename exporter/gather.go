@@ -33,13 +33,10 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 			d := new(Datum)
 
 			// Get releases
-			if strings.Contains(response.url, "/repos/") {
-				getReleases(e, response.url, &d.Releases)
+			if strings.Contains(response.url, "/search") {
+				getIssues(e, response.url, &d.Issues)
 			}
-			// Get PRs
-			if strings.Contains(response.url, "/repos/") {
-				getPRs(e, response.url, &d.Pulls)
-			}
+
 			json.Unmarshal(response.body, &d)
 			data = append(data, d)
 		}
@@ -94,31 +91,15 @@ func (e *Exporter) getRates() (*RateLimits, error) {
 	}, err
 
 }
-
-func getReleases(e *Exporter, url string, data *[]Release) {
+func getIssues(e *Exporter, url string, data *[]Issues) {
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
-	releasesURL := baseURL + "/releases"
-	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.APIToken())
-
+	issuesURL := baseURL + "/search"
+	issueResponse, err := asyncHTTPGets([]string{issuesURL}, e.APIToken())
 	if err != nil {
-		log.Errorf("Unable to obtain releases from API, Error: %s", err)
+		log.Errorf("Unable to obtain issues from API, Error: %s", err)
 	}
-
-	json.Unmarshal(releasesResponse[0].body, &data)
-}
-
-func getPRs(e *Exporter, url string, data *[]Pull) {
-	i := strings.Index(url, "?")
-	baseURL := url[:i]
-	pullsURL := baseURL + "/pulls"
-	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken())
-
-	if err != nil {
-		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
-	}
-
-	json.Unmarshal(pullsResponse[0].body, &data)
+	json.Unmarshal(issueResponse[0].body, &data)
 }
 
 // isArray simply looks for key details that determine if the JSON response is an array or not.
