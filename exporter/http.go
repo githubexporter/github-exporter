@@ -214,6 +214,7 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
+	log.GetDefaultLogger().Infof("Auth HTTP Response To %s", auth)
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
@@ -221,22 +222,21 @@ func basicAuth(username, password string) string {
 func postHTTPResponse(url string, data interface{}, token, user string) (*http.Response, error) {
 
 	log.GetDefaultLogger().Infof("Getting HTTP Response To %s", url)
-	defer log.GetDefaultLogger().Infof("Sucessfully got post HTTP Response To %s", url)
 
 	dat, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
 
-	log.GetDefaultLogger().Infof("Posting to url: %s with payload: %v", url, string(dat))
+	log.GetDefaultLogger().Infof("Posting to url: %s with payload: %v. User %s:%s ", url, string(dat), user, token)
 	client := &http.Client{
 		Timeout: time.Second * 10,
 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(dat))
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte("{}")))
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Basic "+basicAuth(user, token))
+	req.SetBasicAuth(user, token)
 
 	if err != nil {
 		return nil, err

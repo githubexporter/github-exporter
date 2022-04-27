@@ -108,6 +108,7 @@ type JQLRequest struct {
 }
 
 func getIssues(e *Exporter, url string, data *[]IssueMetric) {
+
 	log.GetDefaultLogger().Infof("Getting issues: %s", url)
 	defer log.GetDefaultLogger().Infof("Done getting issues")
 
@@ -120,7 +121,7 @@ func getIssues(e *Exporter, url string, data *[]IssueMetric) {
 	req := []PostRequest{PostRequest{
 		target: issuesURL,
 		data: JQLRequest{
-			JQL:          fmt.Sprintf("(updated >= -%dh and status CHANGED) or (created >= -%dh)", 24, 24),
+			JQL:          fmt.Sprintf("(updated >= -%dh and status CHANGED) or (created >= -%dh", 24, 24),
 			MaxResults:   -1,
 			FieldsByKeys: false,
 			Fields:       []string{"*all"},
@@ -137,7 +138,12 @@ func getIssues(e *Exporter, url string, data *[]IssueMetric) {
 	if dat != nil {
 		logger.GetDefaultLogger().Infof("Got response: %v", string(dat))
 	}
-	json.Unmarshal(issueResponse[0].body, &data)
+	var response SearchResponse
+	err = json.Unmarshal(issueResponse[0].body, &response)
+	if err != nil {
+		log.GetDefaultLogger().Errorf("Error marshalling response: %s", err)
+	}
+	//json.Unmarshal(issueResponse[0].body, &data)
 
 }
 

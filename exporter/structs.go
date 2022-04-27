@@ -52,3 +52,79 @@ type Response struct {
 	body     []byte
 	err      error
 }
+
+type Issue struct {
+	Expand string      `json:"expand"`
+	Id     string      `json:id`
+	Self   string      `json:"self"`
+	Key    string      `json:"key"`
+	Fields Field       `json:"fields"`
+	Parent interface{} `json:"parent"`
+}
+
+type Priority struct {
+	Self    string `json:"self"`
+	Name    string `json:"name"`
+	Id      string `json:"id"`
+	IconURL string `json:"iconUrl"`
+}
+
+type Status struct {
+	Self           string         `json:"self"`
+	IconURL        string         `json:"iconUrl"`
+	Description    string         `json:"description"`
+	Name           string         `json:"name"`
+	Id             int            `json:"id"`
+	StatusCategory StatusCategory `json:"statusCategory"`
+}
+
+type StatusCategory struct {
+	Self      string `json:"self"`
+	Id        string `json:"id"`
+	Key       string `json:"key"`
+	ColorName string `json:"colorName"`
+	Name      string `json:"name"`
+}
+
+type Field struct {
+	Summary   string               `json:"summary"`
+	Status    Status               `json:"status"`
+	Priority  Priority             `json:"priority"`
+	IssueType IssueTypeDescription `json:"issuetype"`
+}
+
+type SearchResponse struct {
+	Expand     string  `json:"expand"`
+	StartAt    int     `json:"startAt"`
+	MaxResults int     `json:"maxResults"`
+	Total      int     `json:"total"`
+	Issues     []Issue `json:"issues"`
+}
+
+// Example
+//"issuetype": {
+//   "self": "https://benri.atlassian.net/rest/api/3/issuetype/10007",
+//   "id": "10007",
+//   "description": "Subtasks track small pieces of work that are part of a larger task.",
+//   "iconUrl": "https://benri.atlassian.net/rest/api/2/universal_avatar/view/type/issuetype/avatar/10316?size=medium",
+//   "name": "Subtask",
+//   "subtask": true,
+//   "avatarId": 10316,
+//   "entityId": "2c4923b2-0754-499c-ab8e-0d1fefa20d99",
+//   "hierarchyLevel": -1
+// },
+type IssueTypeDescription struct {
+	Self           string `json:"self"`
+	Id             int    `json:"id"`
+	Description    string `json:"description"`
+	IconURL        string `json:"iconUrl"`
+	Name           string `json:"name"`
+	Subtask        bool   `json:"subtask"`
+	AvatarId       int    `json:"avatarId"`
+	EntityId       string `json:"entityId"`
+	HeirarchyLevel int    `json:"hierarchyLevel"`
+}
+
+type Project struct {
+	Name string `json:"name"`
+}

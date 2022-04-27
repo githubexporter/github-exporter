@@ -35,6 +35,7 @@ func main() {
 		http.NewServer(exp).Start()
 		done <- struct{}{}
 	}()
+
 	ch := make(chan prometheus.Metric)
 	exp.Collect(ch)
 	logrus.Infof("Done collecting data")
