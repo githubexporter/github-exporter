@@ -21,7 +21,7 @@ type Data []Datum
 
 // Datum is used to store data from all the relevant endpoints in the API
 type Datum struct {
-	Issues []IssuesMetric
+	Issues []IssueMetric
 }
 
 type IssueMetric struct {

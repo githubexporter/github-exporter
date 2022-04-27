@@ -13,31 +13,31 @@ import (
 
 // Config struct holds all of the runtime confgiguration for the application
 type Config struct {
-	*cfg.BaseConfig
+	*BaseConfig
 	apiUrl     *url.URL
 	projects   []string
 	apiToken   string
+	jiraUser   string
 	targetURLs []string
 }
 
 // Init populates the Config struct based on environmental runtime configuration
 func Init() Config {
 
-	listenPort := cfg.GetEnv("LISTEN_PORT", "9171")
+	listenPort := GetEnv("LISTEN_PORT", "9171")
 	os.Setenv("LISTEN_PORT", listenPort)
-	ac := cfg.Init()
+	ac := InitBaseConfig()
 
 	appConfig := Config{
 		&ac,
 		nil,
 		nil,
-		nil,
-		nil,
+		"",
 		"",
 		nil,
 	}
 
-	err := appConfig.SetAPIURL(cfg.GetEnv("JIRA_API_URL", "https://benri.atlassian.net/"))
+	err := appConfig.SetAPIURL(GetEnv("JIRA_API_URL", "https://benri.atlassian.net/"))
 	if err != nil {
 		log.Errorf("Error initialising Configuration. Unable to parse API URL. Error: %v", err)
 	}
@@ -45,6 +45,8 @@ func Init() Config {
 	if repos != "" {
 		appConfig.SetProjects(strings.Split(repos, ", "))
 	}
+
+	appConfig.SetJiraUser(GetEnv("JIRA_USER", ""))
 
 	tokenEnv := os.Getenv("JIRA_API_TOKEN")
 	tokenFile := os.Getenv("JIRA_TOKEN_FILE")
@@ -56,7 +58,7 @@ func Init() Config {
 			log.Errorf("Error initialising Configuration, Error: %v", err)
 		}
 	}
-
+	appConfig.setScrapeURLs()
 	return appConfig
 }
 
@@ -75,11 +77,20 @@ func (c *Config) APIToken() string {
 	return c.apiToken
 }
 
+func (c *Config) User() string {
+	return c.jiraUser
+}
+
 // Sets the base API URL returning an error if the supplied string is not a valid URL
 func (c *Config) SetAPIURL(u string) error {
 	ur, err := url.Parse(u)
 	c.apiUrl = ur
 	return err
+}
+
+// Sets the base API URL returning an error if the supplied string is not a valid URL
+func (c *Config) SetJiraUser(u string) {
+	c.jiraUser = u
 }
 
 // Overrides the entire list of projects
@@ -109,23 +120,20 @@ func (c *Config) setScrapeURLs() error {
 
 	urls := []string{}
 
-	opts := map[string]string{"per_page": "100"} // Used to set the Github API to return 100 results per page (max)
+	opts := map[string]string{} // Used to set the Jira API to return 100 results per page (max)
 
-	// Append projects to the array
-	if len(c.projects) > 0 {
-		for _, x := range c.projects {
-			y := *c.apiUrl
-			y.Path = path.Join(y.Path, "repos", x)
-			q := y.Query()
-			for k, v := range opts {
-				q.Add(k, v)
-			}
-			y.RawQuery = q.Encode()
-			urls = append(urls, y.String())
-		}
+	y := *c.apiUrl
+	y.Path = path.Join(y.Path, "/search")
+	q := y.Query()
+	for k, v := range opts {
+		q.Add(k, v)
 	}
+	y.RawQuery = q.Encode()
+	urls = append(urls, y.String())
 
 	c.targetURLs = urls
+
+	log.Infof("Got %d targets", len(urls))
 
 	return nil
 }

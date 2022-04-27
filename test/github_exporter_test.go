@@ -2,16 +2,17 @@ package test
 
 import (
 	"fmt"
-	"github.com/infinityworks/github-exporter/config"
-	"github.com/infinityworks/github-exporter/exporter"
-	web "github.com/infinityworks/github-exporter/http"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/steinfletcher/apitest"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/benri-io/jira-exporter/config"
+	"github.com/benri-io/jira-exporter/exporter"
+	web "github.com/benri-io/jira-exporter/http"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/steinfletcher/apitest"
 )
 
 func TestHomepage(t *testing.T) {

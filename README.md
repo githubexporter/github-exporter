@@ -12,6 +12,7 @@ This exporter is setup to take input from environment variables. All variables a
 the format "user1, user2".
 * `JIRA_TOKEN` If supplied, enables the user to supply a jira authentication token that allows the API to be queried more often. Optional, but recommended.
 * `JIRA_TOKEN_FILE` If supplied _instead of_ `JIRA_TOKEN`, enables the user to supply a path to a file containing a jira authentication token that allows the API to be queried more often. Optional, but recommended.
+*  JIRA_USER: The Jira User 
 * `API_URL` Jira API URL. It should be https://<your-org>.atlassian.net/rest/api/3`
 * `LISTEN_PORT` The port you wish to run the container on, the Dockerfile defaults this to `9171`
 * `METRICS_PATH` the metrics URL path you wish to use, defaults to `/metrics`

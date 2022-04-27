@@ -32,7 +32,7 @@ func (c BaseConfig) ApplicationName() string {
 	return c.appName
 }
 
-func Init() BaseConfig {
+func InitBaseConfig() BaseConfig {
 
 	appConfig := BaseConfig{
 		metricsPath: GetEnv("METRICS_PATH", "/metrics"),

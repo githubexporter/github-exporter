@@ -1,10 +1,10 @@
 package main
 
 import (
-	conf "github.com/infinityworks/github-exporter/config"
-	"github.com/infinityworks/github-exporter/exporter"
-	"github.com/infinityworks/github-exporter/http"
-	"github.com/infinityworks/go-common/logger"
+	conf "github.com/benri-io/jira-exporter/config"
+	"github.com/benri-io/jira-exporter/exporter"
+	"github.com/benri-io/jira-exporter/http"
+	"github.com/benri-io/jira-exporter/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
@@ -17,8 +17,9 @@ var (
 
 func init() {
 	applicationCfg = conf.Init()
-	mets = exporter.AddMetrics()
 	log = logger.Start(&applicationCfg)
+	logger.SetDefaultLogger(log)
+	mets = exporter.AddMetrics()
 }
 
 func main() {
@@ -29,5 +30,13 @@ func main() {
 		Config:     applicationCfg,
 	}
 
-	http.NewServer(exp).Start()
+	var done = make(chan struct{}, 1)
+	go func() {
+		http.NewServer(exp).Start()
+		done <- struct{}{}
+	}()
+	ch := make(chan prometheus.Metric)
+	exp.Collect(ch)
+	logrus.Infof("Done collecting data")
+	<-done
 }
