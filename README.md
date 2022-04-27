@@ -1,20 +1,18 @@
-[![Build Status](https://travis-ci.org/infinityworks/github-exporter.svg?branch=master)](https://travis-ci.org/infinityworks/github-exporter)
+# Prometheus Jira Exporter
 
-# Prometheus GitHub Exporter
-
-Exposes basic metrics for your repositories from the GitHub API, to a Prometheus compatible endpoint.
+Exposes basic metrics for your projects from the Jira API, to a Prometheus compatible endpoint.
 
 ## Configuration
 
 This exporter is setup to take input from environment variables. All variables are optional:
 
 * `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2".
-* `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
+* `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Jira users/orgs.
 * `USERS` If supplied, the exporter will enumerate all repositories for that users. Expected in
 the format "user1, user2".
-* `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
-* `GITHUB_TOKEN_FILE` If supplied _instead of_ `GITHUB_TOKEN`, enables the user to supply a path to a file containing a github authentication token that allows the API to be queried more often. Optional, but recommended.
-* `API_URL` Github API URL, shouldn't need to change this. Defaults to `https://api.github.com`
+* `JIRA_TOKEN` If supplied, enables the user to supply a jira authentication token that allows the API to be queried more often. Optional, but recommended.
+* `JIRA_TOKEN_FILE` If supplied _instead of_ `JIRA_TOKEN`, enables the user to supply a path to a file containing a jira authentication token that allows the API to be queried more often. Optional, but recommended.
+* `API_URL` Jira API URL. It should be https://<your-org>.atlassian.net/rest/api/3`
 * `LISTEN_PORT` The port you wish to run the container on, the Dockerfile defaults this to `9171`
 * `METRICS_PATH` the metrics URL path you wish to use, defaults to `/metrics`
 * `LOG_LEVEL` The level of logging the exporter will run with, defaults to `debug`
@@ -24,29 +22,28 @@ the format "user1, user2".
 
 Run manually from Docker Hub:
 ```
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" infinityworks/github-exporter
+docker run -d --restart=always -p 9171:9171 jira-exporter
 ```
 
 Build a docker image:
 ```
 docker build -t <image-name> .
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" <image-name>
+docker run -d --restart=always -p 9171:9171 <image-name>
 ```
 
 ## Docker compose
 
 ```
-github-exporter:
+jira-exporter:
     tty: true
     stdin_open: true
     expose:
       - 9171
     ports:
       - 9171:9171
-    image: infinityworks/github-exporter:latest
+    image: jira-exporter:latest
     environment:
-      - REPOS=<REPOS you want to monitor>
-      - GITHUB_TOKEN=<your github api token>
+      - JIRA_TOKEN=<your jira api token>
 
 ```
 
@@ -72,6 +69,3 @@ Prior to running the following command ensure the number has been increased to d
 ```bash
 ./release-version.sh
 ```
-
-## Metadata
-[![](https://images.microbadger.com/badges/image/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own image badge on microbadger.com") [![](https://images.microbadger.com/badges/version/infinityworks/github-exporter.svg)](http://microbadger.com/images/infinityworks/github-exporter "Get your own version badge on microbadger.com")
