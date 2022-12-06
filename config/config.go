@@ -1,11 +1,15 @@
 package config
 
 import (
+	"context"
 	"io/ioutil"
+	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation"
 	log "github.com/sirupsen/logrus"
 
 	"os"
@@ -22,6 +26,7 @@ type Config struct {
 	users         []string
 	apiToken      string
 	targetURLs    []string
+	gitHubApp 	  bool
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -39,6 +44,7 @@ func Init() Config {
 		nil,
 		"",
 		nil,
+		false,
 	}
 
 	err := appConfig.SetAPIURL(cfg.GetEnv("API_URL", "https://api.github.com"))
@@ -57,6 +63,24 @@ func Init() Config {
 	if users != "" {
 		appConfig.SetUsers(strings.Split(users, ", "))
 	}
+
+	gitHubApp := os.Getenv("GITHUB_APP")
+	gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
+	gitHubAppId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64) 
+	gitHubAppInstalaltionId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
+
+	if strings.ToLower(gitHubApp) == "true" {
+		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
+		if err != nil {
+			log.Fatal(err)
+		}	
+		strToken,err := itr.Token(context.Background())
+		if err != nil{
+			log.Errorf("Error creating token, Error: %v", err)
+		}
+		appConfig.SetAPIToken(strToken)
+		return appConfig
+	}
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	if tokenEnv != "" {
@@ -67,7 +91,6 @@ func Init() Config {
 			log.Errorf("Error initialising Configuration, Error: %v", err)
 		}
 	}
-
 	return appConfig
 }
 

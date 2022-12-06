@@ -1,23 +1,20 @@
-FROM golang:1.14.8-stretch as build
-LABEL maintainer="Infinity Works"
+FROM golang:1.19-buster AS build
 
-ENV GO111MODULE=on
+WORKDIR /go/src/github.com/galbirk/github-exporter
 
-COPY ./ /go/src/github.com/infinityworks/github-exporter
-WORKDIR /go/src/github.com/infinityworks/github-exporter
+COPY . .
 
-RUN go mod download \
-    && go test ./... \
-    && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
+RUN go mod download
 
-FROM alpine:3.11.3
+RUN go build -o /main
 
-RUN apk --no-cache add ca-certificates \
-     && addgroup exporter \
-     && adduser -S -G exporter exporter
-ADD VERSION .
-USER exporter
-COPY --from=build /bin/main /bin/main
-ENV LISTEN_PORT=9171
-EXPOSE 9171
-ENTRYPOINT [ "/bin/main" ]
+## Deploy
+FROM gcr.io/distroless/base-debian10
+
+WORKDIR /
+
+COPY --from=build /main /main 
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/main"]

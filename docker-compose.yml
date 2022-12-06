@@ -4,11 +4,15 @@ services:
   github-exporter:
     tty: true
     stdin_open: true
+    volumes:
+      - "./key.pem:/key.pem"
     expose:
       - 9171
     ports:
       - 9171:9171
-    image: infinityworks/github-exporter:latest
+    build: .
     environment:
-      - REPOS=<REPOS you want to monitor>
-      - GITHUB_TOKEN=<your github api token>
+      - GITHUB_APP=true
+      - GITHUB_APP_ID=
+      - GITHUB_APP_INSTALLATION_ID=
+      - GITHUB_APP_KEY_PATH=./key.pem
