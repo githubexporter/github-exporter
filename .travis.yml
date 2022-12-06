@@ -1,12 +1,12 @@
 language: go
 
 go:
-  - "1.14"
+  - "1.19"
 
 script:
-  - diff -u <(echo -n) <(gofmt -s -d ./)
   - diff -u <(echo -n) <(go vet ./...)
   - go test -v ./...
 
 env:
   - GO111MODULE=on
+# - diff -u <(echo -n) <(gofmt -s -d ./)
