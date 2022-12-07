@@ -18,6 +18,7 @@ the format "user1, user2".
 * `GITHUB_APP_ID` The APP ID of the GitHub App.
 * `GITHUB_APP_INSTALLATION_ID` The INSTALLATION ID of the GitHub App.
 * `GITHUB_APP_KEY_PATH` The path to the github private key.
+* `GITHUB_RATE_LIMIT` The RATE LIMIT that suppose to be for github app (default is 15,000). If the exporter sees the value is below this variable it generating new token for the app.
 * `API_URL` Github API URL, shouldn't need to change this. Defaults to `https://api.github.com`
 * `LISTEN_PORT` The port you wish to run the container on, the Dockerfile defaults this to `9171`
 * `METRICS_PATH` the metrics URL path you wish to use, defaults to `/metrics`
