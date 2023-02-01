@@ -1,4 +1,4 @@
-FROM golang:1.14.8-stretch as build
+FROM golang:1.19.5-buster as build
 LABEL maintainer="Infinity Works"
 
 ENV GO111MODULE=on
@@ -10,7 +10,7 @@ RUN go mod download \
     && go test ./... \
     && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
 
-FROM alpine:3.11.3
+FROM alpine:3.17.1
 
 RUN apk --no-cache add ca-certificates \
      && addgroup exporter \
