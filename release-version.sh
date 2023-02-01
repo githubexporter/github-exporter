@@ -7,9 +7,9 @@ git pull origin master
 version=$(cat VERSION)
 echo "version: $version"
 
-# exist if tag alredy exists.
+# exist if tag already exists.
 if [ $(git tag -l "$version") ]; then
-  echo "tag already exists. Ensure verion number has been update in VERSION."
+  echo "tag already exists. Ensure version number has been update in VERSION."
   exit 1
 fi
 
