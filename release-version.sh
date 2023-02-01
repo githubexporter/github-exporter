@@ -19,10 +19,7 @@ if ! [[ "$version" =~ ^[0-9.]+$ ]]; then
   exit 1
 fi
 
-# tag current latest commit.
-echo "tagging..."
-git tag $version
+docker build -t infinityworks/github-exporter:latest -t infinityworks/github-exporter:$version .
+docker push infinityworks/github-exporter:latest
+docker push infinityworks/github-exporter:$version
 
-# push tag to trigger build.
-echo "pushing tag to trigger build..."
-git push origin $version
