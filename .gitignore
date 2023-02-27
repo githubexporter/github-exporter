@@ -1,3 +1,6 @@
 .sequence
 TODO
 github-exporter
+
+.idea/
+.vscode/

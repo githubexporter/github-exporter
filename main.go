@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/fatih/structs"
 	conf "github.com/infinityworks/github-exporter/config"
 	"github.com/infinityworks/github-exporter/exporter"
 
@@ -24,7 +23,7 @@ func init() {
 }
 
 func main() {
-	log.WithFields(structs.Map(applicationCfg)).Info("Starting Exporter")
+	log.Info("Starting Exporter")
 
 	exporter := exporter.New(applicationCfg, log)
 
