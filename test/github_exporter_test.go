@@ -54,6 +54,22 @@ func TestGithubExporter(t *testing.T) {
 		End()
 }
 
+func TestGithubExporterHttpErrorHandling(t *testing.T) {
+	test, collector := apiTest(withConfig("myOrg/myRepo"))
+	defer prometheus.Unregister(&collector)
+
+	// Test that the exporter returns when an error occurs
+	// Ideally a new gauge should be added to keep track of scrape errors
+	// following prometheus exporter guidelines
+	test.Mocks(
+		githubPullsError(),
+	).
+		Get("/metrics").
+		Expect(t).
+		Status(http.StatusOK).
+		End()
+}
+
 func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
 	exp := exporter.Exporter{
 		APIMetrics: exporter.AddMetrics(),
@@ -115,6 +131,15 @@ func githubPulls() *apitest.Mock {
 		Times(2).
 		Body(readFile("testdata/pulls_response.json")).
 		Status(http.StatusOK).
+		End()
+}
+
+func githubPullsError() *apitest.Mock {
+	return apitest.NewMock().
+		Get("https://api.github.com/repos/myOrg/myRepo/pulls").
+		Header("Authorization", "token 12345").
+		RespondWith().
+		Status(http.StatusBadRequest).
 		End()
 }
 
