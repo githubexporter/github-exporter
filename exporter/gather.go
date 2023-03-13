@@ -3,12 +3,12 @@ package exporter
 import (
 	"context"
 	"fmt"
+	"golang.org/x/oauth2"
 	"strconv"
 	"strings"
 
 	"github.com/google/go-github/github"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/oauth2"
 )
 
 // Describe - loops through the API metrics and passes them to prometheus.Describe
@@ -20,15 +20,15 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 
 }
 
-// Collect function, called on by Prometheus Client library
-// This function is called when a scrape is peformed on the /metrics page
+// Collect - called on by Prometheus Client library
+// This function is called when a scrape is performed on the /metrics page
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	e.Log.Info("Initialising capture of metrics")
 
 	// TBC HOW THIS WORKS
-	allRepos := []*RepositoryMetrics{}
-	allOrgs := []*OrganisationMetrics{}
+	var allRepos []*RepositoryMetrics
+	var allOrgs []*OrganisationMetrics
 
 	// Only execute if these have been defined
 	if len(e.Config.Organisations) > 0 {
@@ -46,6 +46,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			org, repos, err := gatherByOrg(e.Client, org, e.Config.OptionalMetrics)
 			if err != nil {
 				e.Log.Error(err)
+				return
 			}
 
 			allOrgs = append(allOrgs, org)
@@ -75,10 +76,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			repos, err := fetchUserRepos(e.Client, user, e.Config.OptionalMetrics)
 			if err != nil {
 				e.Log.Error(err)
+				return
 			}
 
 			allRepos = append(allRepos, repos...)
-
 		}
 	}
 
@@ -94,9 +95,14 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 			e.Log.Infof("Gathering metrics for GitHub Repo %s", repo)
 
-		}
-		e.Log.Info("No individual repositories specified, skipping collection")
+			repos, err := gatherByRepo(e.Client, repo, e.Config.OptionalMetrics)
+			if err != nil {
+				e.Log.Error(err)
+				return
+			}
 
+			allRepos = append(allRepos, repos)
+		}
 	}
 
 	// Range through Repository metrics
@@ -125,6 +131,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	rates, err := gatherRates(e.Client)
 	if err != nil {
 		e.Log.Error(err)
+		return
 	}
 
 	ch <- prometheus.MustNewConstMetric(e.Metrics["Limit"], prometheus.GaugeValue, rates.Limit)
@@ -138,6 +145,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 // newClient provides an authenticated Github
 // client for use in our API interactions
 func newClient(token string) *github.Client {
+	if token == "" {
+		return github.NewClient(nil)
+	}
+
 	ctx := context.Background()
 
 	// Embed our authentication token in the client
@@ -205,14 +216,16 @@ func gatherByOrg(client *github.Client, org string, opts []string) (*Organisatio
 
 func gatherByRepo(client *github.Client, repo string, opts []string) (*RepositoryMetrics, error) {
 
-	// Prepare the arguemtns for the get
+	// Prepare the arguments for the get
 	parts := strings.Split(repo, "/")
 	o := parts[0]
 	r := parts[1]
 
+	// TODO - check for duplicates
 	// if e.isDuplicateRepository(e.ProcessedRepos, o, r) {
 	// 	continue
 	// }
+
 	// collect basic repository information for the repo
 	repoMetrics, _, err := client.Repositories.Get(context.Background(), o, r)
 	if err != nil {
@@ -244,7 +257,6 @@ func (e *Exporter) isDuplicateRepository(repos []ProcessedRepos, o, r string) bo
 
 	for _, n := range repos {
 		if r == n.Name && o == n.Owner {
-			e.Log.Infof("Duplicate collection detected for %s/%s", o, r)
 			return true
 		}
 	}
@@ -382,7 +394,7 @@ func fetchOrgCollaborators(client *github.Client, org string) ([]*github.User, e
 
 		collabs, resp, err := client.Organizations.ListOutsideCollaborators(context.Background(), org, opt)
 		if err != nil {
-			return nil, fmt.Errorf("Error listing members by org: %v", err)
+			return nil, fmt.Errorf("Error listing collaborators by org: %v", err)
 		}
 		allCollabs = append(allCollabs, collabs...)
 		if resp.NextPage == 0 {
@@ -405,7 +417,7 @@ func fetchOrgInvites(client *github.Client, org string) ([]*github.Invitation, e
 
 		invites, resp, err := client.Organizations.ListPendingOrgInvitations(context.Background(), org, opt)
 		if err != nil {
-			return nil, fmt.Errorf("Error listing members by org: %v", err)
+			return nil, fmt.Errorf("Error listing invites by org: %v", err)
 		}
 		allInvites = append(allInvites, invites...)
 		if resp.NextPage == 0 {

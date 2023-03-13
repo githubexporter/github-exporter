@@ -19,7 +19,7 @@ func New(c conf.Config, log *logrus.Logger) *Exporter {
 
 }
 
-// addMetrics - Add's all of the metrics to a map of strings, returns the map.
+// addMetrics - Adds all the metrics to a map of strings, returns the map.
 func addMetrics() map[string]*prometheus.Desc {
 
 	Metrics := make(map[string]*prometheus.Desc)
