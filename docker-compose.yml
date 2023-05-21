@@ -13,6 +13,6 @@ services:
     build: .
     environment:
       - GITHUB_APP=true
-      - GITHUB_APP_ID=
-      - GITHUB_APP_INSTALLATION_ID=
-      - GITHUB_APP_KEY_PATH=./key.pem
+      - GITHUB_APP_ID=312095
+      - GITHUB_APP_INSTALLATION_ID=35880518
+      - GITHUB_APP_KEY_PATH=/key.pem

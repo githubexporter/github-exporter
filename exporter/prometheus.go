@@ -3,7 +3,6 @@ package exporter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -37,7 +36,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			log.Errorf("Error checking token expiration status: %v", err)
 			return
 		}
-		if needReAuth{
+		if needReAuth {
 			e.reAuth()
 		}
 	}
@@ -68,57 +67,54 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 }
 
-func (e *Exporter) isTokenExpired () (bool,error){
+func (e *Exporter) isTokenExpired() (bool, error) {
 	u := *e.APIURL()
 	u.Path = path.Join(u.Path, "rate_limit")
 
 	resp, err := getHTTPResponse(u.String(), e.APIToken())
 
 	if err != nil {
-		fmt.Errorf("Error in getting GitHub API")
-		return false,err
+		return false, err
 	}
 	defer resp.Body.Close()
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
 	if resp.StatusCode == 404 {
-		fmt.Errorf("Rate Limiting not enabled in GitHub API")
 		return false, errors.New("404 Error")
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
 
 	if err != nil {
-		fmt.Errorf("Error parsing api limit")
 		return false, err
 	}
-	
+
 	defaultLimit := os.Getenv("GITHUB_RATE_LIMIT")
 	if len(defaultLimit) == 0 {
-        defaultLimit = "15000"
-    }
-	defaultLimitInt,err := strconv.ParseInt(defaultLimit, 10, 64)	
-	if err != nil {
-		return false,err
+		defaultLimit = "15000"
 	}
-	if limit < float64(defaultLimitInt){
+	defaultLimitInt, err := strconv.ParseInt(defaultLimit, 10, 64)
+	if err != nil {
+		return false, err
+	}
+	if limit < float64(defaultLimitInt) {
 		return true, nil
 	}
 	return false, nil
-	
+
 }
 
-func (e *Exporter) reAuth () {
+func (e *Exporter) reAuth() error {
 	gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
-	gitHubAppId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64) 
-	gitHubAppInstalaltionId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
+	gitHubAppId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+	gitHubAppInstalaltionId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
 	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
 	if err != nil {
-		log.Fatal(err)
-	}	
-	strToken,err := itr.Token(context.Background())
-	if err != nil{
-		log.Errorf("Error creating token, Error: %v", err)
+		return err
 	}
-	e.Config.SetAPIToken(strToken) 
-	log.Info("Reauthenticated successfuly!")
+	strToken, err := itr.Token(context.Background())
+	if err != nil {
+		return err
+	}
+	e.Config.SetAPIToken(strToken)
+	return nil
 }

@@ -26,7 +26,7 @@ type Config struct {
 	users         []string
 	apiToken      string
 	targetURLs    []string
-	gitHubApp 	  bool
+	gitHubApp     bool
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -65,22 +65,13 @@ func Init() Config {
 	}
 
 	gitHubApp := os.Getenv("GITHUB_APP")
-	gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
-	gitHubAppId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64) 
-	gitHubAppInstalaltionId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
-
-	if strings.ToLower(gitHubApp) == "true" {
-		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
-		if err != nil {
-			log.Fatal(err)
-		}	
-		strToken,err := itr.Token(context.Background())
-		if err != nil{
-			log.Errorf("Error creating token, Error: %v", err)
-		}
-		appConfig.SetAPIToken(strToken)
-		return appConfig
+	if gitHubApp == "true" {
+		gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
+		gitHubAppId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+		gitHubAppInstalaltionId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
+		appConfig.SetAPITokenFromGitHubApp(gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
 	}
+
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	if tokenEnv != "" {
@@ -146,6 +137,20 @@ func (c *Config) SetAPITokenFromFile(tokenFile string) error {
 		return err
 	}
 	c.apiToken = strings.TrimSpace(string(b))
+	return nil
+}
+
+// SetAPITokenFromGitHubApp generating api token from github app configuration.
+func (c *Config) SetAPITokenFromGitHubApp(gitHubAppId int64, gitHubAppInstalaltionId int64, gitHubAppKeyPath string) error {
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
+	if err != nil {
+		return err
+	}
+	strToken, err := itr.Token(context.Background())
+	if err != nil {
+		return err
+	}
+	c.SetAPIToken(strToken)
 	return nil
 }
 
