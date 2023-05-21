@@ -57,7 +57,7 @@ func Init() Config {
 	}
 	orgs := os.Getenv("ORGS")
 	if orgs != "" {
-		appConfig.SetOrganisations(strings.Split(repos, ", "))
+		appConfig.SetOrganisations(strings.Split(orgs, ", "))
 	}
 	users := os.Getenv("USERS")
 	if users != "" {

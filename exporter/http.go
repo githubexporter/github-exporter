@@ -118,7 +118,7 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 
 	// Triggers if a user specifies an invalid or not visible repository
 	if resp.StatusCode == 404 {
-		return fmt.Errorf("Error: Received 404 status from Github API, ensure the repsository URL is correct. If it's a privare repository, also check the oauth token is correct")
+		return fmt.Errorf("Error: Received 404 status from Github API, ensure the repository URL is correct. If it's a private repository, also check the oauth token is correct")
 	}
 
 	ch <- &Response{url, resp, body, err}

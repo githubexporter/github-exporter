@@ -1,2 +1,4 @@
 .sequence
 *.pem
+.idea/
+.vscode/
