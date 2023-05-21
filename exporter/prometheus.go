@@ -3,7 +3,6 @@ package exporter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -75,20 +74,17 @@ func (e *Exporter) isTokenExpired () (bool,error){
 	resp, err := getHTTPResponse(u.String(), e.APIToken())
 
 	if err != nil {
-		fmt.Errorf("Error in getting GitHub API")
 		return false,err
 	}
 	defer resp.Body.Close()
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
 	if resp.StatusCode == 404 {
-		fmt.Errorf("Rate Limiting not enabled in GitHub API")
 		return false, errors.New("404 Error")
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
 
 	if err != nil {
-		fmt.Errorf("Error parsing api limit")
 		return false, err
 	}
 	
@@ -107,18 +103,18 @@ func (e *Exporter) isTokenExpired () (bool,error){
 	
 }
 
-func (e *Exporter) reAuth () {
+func (e *Exporter) reAuth () error{
 	gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
 	gitHubAppId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64) 
 	gitHubAppInstalaltionId,_ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
 	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}	
 	strToken,err := itr.Token(context.Background())
 	if err != nil{
-		log.Errorf("Error creating token, Error: %v", err)
+		return err
 	}
 	e.Config.SetAPIToken(strToken) 
-	log.Info("Reauthenticated successfuly!")
+	return nil
 }
