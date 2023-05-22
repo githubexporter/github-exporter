@@ -19,7 +19,9 @@ if ! [[ "$version" =~ ^[0-9.]+$ ]]; then
   exit 1
 fi
 
-docker build -t infinityworks/github-exporter:latest -t infinityworks/github-exporter:$version .
+docker build -t infinityworks/github-exporter:latest -t infinityworks/github-exporter:$version -t githubexporter/github-exporter:latest -t githubexporter/github-exporter:$version .
 docker push infinityworks/github-exporter:latest
 docker push infinityworks/github-exporter:$version
+docker push githubexporter/github-exporter:latest
+docker push githubexporter/github-exporter:$version
 

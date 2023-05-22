@@ -1,4 +1,10 @@
-[![Build Status](https://travis-ci.org/infinityworks/github-exporter.svg?branch=master)](https://travis-ci.org/infinityworks/github-exporter)
+# :warning: This repository is moving to the [githubexporter](https://github.com/githubexporter) organisation at [githubexporter/github-exporter](https://github.com/githubexporter/github-exporter) :warning:
+
+Timeline of changes:
+* 22/05/2023 - All current images are available in the new Docker Hub organisation at https://hub.docker.com/r/githubexporter/github-exporter
+* 30/05/2023 - GitHub repository will be migrated to https://github.com/githubexporter/github-exporter
+* 30/05/2023 - Any new images will be pushed to the `githubexporter` Docker Hub repository only
+* 30/08/2023 - The `infinityworks/github-exporter` Docker Hub repository will be deprecated
 
 # Prometheus GitHub Exporter
 
@@ -11,7 +17,7 @@ This exporter is setup to take input from environment variables. All variables a
 * `ORGS` If supplied, the exporter will enumerate all repositories for that organization. Expected in the format "org1, org2".
 * `REPOS` If supplied, The repos you wish to monitor, expected in the format "user/repo1, user/repo2". Can be across different Github users/orgs.
 * `USERS` If supplied, the exporter will enumerate all repositories for that users. Expected in
-the format "user1, user2".
+  the format "user1, user2".
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `GITHUB_TOKEN_FILE` If supplied _instead of_ `GITHUB_TOKEN`, enables the user to supply a path to a file containing a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `API_URL` Github API URL, shouldn't need to change this. Defaults to `https://api.github.com`
@@ -24,7 +30,7 @@ the format "user1, user2".
 
 Run manually from Docker Hub:
 ```
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" infinityworks/github-exporter
+docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" githubexporter/github-exporter
 ```
 
 Build a docker image:
@@ -43,7 +49,7 @@ github-exporter:
       - 9171
     ports:
       - 9171:9171
-    image: infinityworks/github-exporter:latest
+    image: githubexporter/github-exporter:latest
     environment:
       - REPOS=<REPOS you want to monitor>
       - GITHUB_TOKEN=<your github api token>
@@ -57,7 +63,7 @@ An example of these metrics can be found in the `METRICS.md` markdown file in th
 
 ## Tests
 
-There is a set of blackbox behavioural tests which validate metrics endpoint in the `test` directory. 
+There is a set of blackbox behavioural tests which validate metrics endpoint in the `test` directory.
 Run as follows
 
 ```bash
@@ -67,7 +73,7 @@ make test
 ## Version Release Procedure
 Once a new pull request has been merged into `master` the following script should be executed locally. The script will trigger a new image build in docker hub with the new image having the tag `release-<version>`. The version is taken from the `VERSION` file and must follow semantic versioning. For more information see [semver.org](https://semver.org/).
 
-Prior to running the following command ensure the number has been increased to desired version in `VERSION`: 
+Prior to running the following command ensure the number has been increased to desired version in `VERSION`:
 
 ```bash
 ./release-version.sh
