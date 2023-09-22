@@ -1,9 +1,9 @@
 package main
 
 import (
-	conf "github.com/infinityworks/github-exporter/config"
-	"github.com/infinityworks/github-exporter/exporter"
-	"github.com/infinityworks/github-exporter/http"
+	conf "github.com/githubexporter/github-exporter/config"
+	"github.com/githubexporter/github-exporter/exporter"
+	"github.com/githubexporter/github-exporter/http"
 	"github.com/infinityworks/go-common/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
