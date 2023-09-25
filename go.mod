@@ -1,4 +1,4 @@
-module github.com/infinityworks/github-exporter
+module github.com/githubexporter/github-exporter
 
 go 1.19
 

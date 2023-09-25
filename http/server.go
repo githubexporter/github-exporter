@@ -1,11 +1,12 @@
 package http
 
 import (
-	"github.com/infinityworks/github-exporter/exporter"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
+
+	"github.com/githubexporter/github-exporter/exporter"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
