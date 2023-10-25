@@ -10,7 +10,7 @@ RUN go mod download \
     && go test ./... \
     && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
 
-FROM alpine:3.17.1
+FROM alpine:3.17.5
 
 RUN apk --no-cache add ca-certificates \
      && addgroup exporter \
