@@ -46,11 +46,15 @@ type Release struct {
 	Assets []Asset `json:"assets"`
 }
 
+/// TODO modify this to include pull request state
 type Pull struct {
 	Url  string `json:"url"`
 	User struct {
 		Login string `json:"login"`
 	} `json:"user"`
+	CreatedAt string `json:"created_at"`
+	MergedAt string `json:"merged_at"`
+	State string `json:"state"`
 }
 
 type Asset struct {

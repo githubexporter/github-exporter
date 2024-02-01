@@ -2,7 +2,7 @@ package exporter
 
 import (
 	"strconv"
-
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -21,8 +21,13 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Total number of open issues for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
-	APIMetrics["PullRequestCount"] = prometheus.NewDesc(
-		prometheus.BuildFQName("github", "repo", "pull_request_count"),
+	APIMetrics["OpenPullRequestCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "open_pull_request_count"),
+		"Total number of pull requests for given repository",
+		[]string{"repo", "user"}, nil,
+	)
+	APIMetrics["MergedPullRequestCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "merged_pull_request_count"),
 		"Total number of pull requests for given repository",
 		[]string{"repo", "user"}, nil,
 	)
@@ -81,14 +86,26 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 			}
 		}
 		prCount := 0
-		for range x.Pulls {
-			prCount += 1
+		mergedPrCount := 0
+		fmt.Printf("%+v\n", x.Pulls)
+		for _, p := range x.Pulls {
+			fmt.Printf("%+v\n", p)
+			if p.State == "open"{
+				prCount += 1
+			} 
+			if p.State == "closed"{
+				mergedPrCount +=1
+			}
+			// Loop over pull requests
+			// Check state of PR, if open increment prCount, if merged implement mergedPr Count
 		}
 		// issueCount = x.OpenIssue - prCount
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, (x.OpenIssues - float64(prCount)), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 
 		// prCount
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenPullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["MergedPullRequestCount"], prometheus.GaugeValue, float64(mergedPrCount), x.Name, x.Owner.Login)
+
 	}
 
 	// Set Rate limit stats

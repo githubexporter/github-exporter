@@ -22,14 +22,18 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 	}
 
 	for _, response := range responses {
+		fmt.Printf("response url inside gatherData loop is %+v\n",string(response.url))
 
 		// Github can at times present an array, or an object for the same data set.
 		// This code checks handles this variation.
 		if isArray(response.body) {
+			fmt.Printf("response url is an array:  %+v\n",string(response.url))
+
 			ds := []*Datum{}
 			json.Unmarshal(response.body, &ds)
 			data = append(data, ds...)
 		} else {
+			fmt.Printf("response url is not an array:  %+v\n",string(response.url))
 			d := new(Datum)
 
 			// Get releases
@@ -38,6 +42,7 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 			}
 			// Get PRs
 			if strings.Contains(response.url, "/repos/") {
+				fmt.Printf("responses url  is %+v\n",string(response.url))
 				getPRs(e, response.url, &d.Pulls)
 			}
 			json.Unmarshal(response.body, &d)
@@ -109,14 +114,18 @@ func getReleases(e *Exporter, url string, data *[]Release) {
 }
 
 func getPRs(e *Exporter, url string, data *[]Pull) {
+	log.Infof("inside getPRs , url is: %s", url)
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
-	pullsURL := baseURL + "/pulls"
+	pullsURL := baseURL + "/pulls?state=all"
+	log.Infof("pullsURL inside getPRs is : %s", pullsURL)
 	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken())
 
 	if err != nil {
 		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
 	}
+	fmt.Printf("URL is:   %+v\n", url)
+	fmt.Printf("pullResponse.Body is:   %+v\n", string(pullsResponse[0].body))
 
 	json.Unmarshal(pullsResponse[0].body, &data)
 }
