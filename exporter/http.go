@@ -5,10 +5,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	neturl "net/url"
-	"strconv"
+	// "strconv"
 	"time"
-	"io"
-
+	// "strings"
 	log "github.com/sirupsen/logrus"
 	"github.com/tomnomnom/linkheader"
 )
@@ -19,7 +18,7 @@ const RateLimitExceededStatus = "403 rate limit exceeded"
 func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 	// Expand targets by following GitHub pagination links
 	targets = paginateTargets(targets, token)
-	fmt.Printf("targets are %+v\n",targets)
+	fmt.Printf("within asyncHTTPGets targets are :  %+v\n",targets)
 
 	// Channels used to enable concurrent requests
 	ch := make(chan *Response, len(targets))
@@ -27,36 +26,42 @@ func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 	responses := []*Response{}
 
 	for _, url := range targets {
-		fmt.Printf("current target is: %+v\n",url)
+		fmt.Printf("within asyncHTTPGets currently looping over  :  %+v\n",url)
 
 		go func(url string) {
 			err := getResponse(url, token, ch)
-			fmt.Printf("err is: %+v\n",err)
-			if err != nil {			
+			fmt.Printf("getResponse error for :  %+v\n",url)
+			fmt.Printf("getResponse error :  %+v\n",err)
+
+
+			if err != nil {
+				fmt.Printf("no getResponse error for :  %+v\n",url)
 				ch <- &Response{url, nil, []byte{}, err}
 			}
 		}(url)
 
 	}
 
+
+	fmt.Printf("Channel is :  %+v\n",ch)
+
 	for {
 		select {
 		case r := <-ch:
-			fmt.Printf("inside switch statement for: %+v\n",r)
 			if r.err != nil {
 				log.Errorf("Error scraping API, Error: %v", r.err)
 				return nil, r.err
 			}
 			responses = append(responses, r)
-			// fmt.Printf("response size is %+v\n",len(responses))
-			// fmt.Printf("targets size is %+v\n",len(targets))
-			for _, response := range responses {
-				fmt.Printf("responses url inside asyncHTTPGets is %+v\n",string(response.url))
-			// 	fmt.Printf("response body from array is %+v\n",string(response.body))
-
+			fmt.Printf(" len(targets) is :  %+v\n", len(targets) )
+			fmt.Printf(" len(responses) is :  %+v\n", len(responses) )
+			for _, response := range responses{
+				responseData := string(response.body[:])
+				fmt.Printf(" response body is :  %+v\n", responseData )
 			}
+
 			if len(responses) == len(targets) {
-				return responses, nil 
+				return responses, nil
 			}
 		}
 
@@ -67,54 +72,50 @@ func asyncHTTPGets(targets []string, token string) ([]*Response, error) {
 func paginateTargets(targets []string, token string) []string {
 
 	paginated := targets
-	// fmt.Println("targets are:")
-	// fmt.Println("%+v\n",targets)
 
-	for _, target := range targets {
-		fmt.Println("target is")
-		fmt.Println("%+v\n",target)
-
+	for _, urlTarget := range targets {
+		fmt.Printf("targets are :  %+v\n",targets)
 
 		// make a request to the original target to get link header if it exists
-		resp, err := getHTTPResponse(target, token)
+		resp, err := getHTTPResponse(urlTarget, token)
 		if err != nil {
 			log.Errorf("Error retrieving Link headers, Error: %s", err)
 			continue
 		}
-		fmt.Printf("printing resp.Body from pagniated target")
-		body, _ := io.ReadAll(resp.Body)
-		// check errors
-		fmt.Println(body)
 
+		fmt.Printf("resp.Header[\"Link\"] is:  %+v\n",resp.Header["Link"])
 		if resp.Header["Link"] != nil {
-			fmt.Printf("printing res header link")
-			fmt.Printf("%+v\n",resp.Header["Link"])
 			links := linkheader.Parse(resp.Header["Link"][0])
-
+			fmt.Printf("links are :  %+v\n",links)
 			for _, link := range links {
-				if link.Rel == "last" {
+				u, err := neturl.Parse(link.URL)
+				if err != nil {
+						log.Errorf("Unable to parse %v %s", u, err)
+				 }
 
-					u, err := neturl.Parse(link.URL)
-					if err != nil {
-						log.Errorf("Unable to parse page URL, Error: %s", err)
-					}
+				// q := u.Query()
+				// lastPage, err := strconv.Atoi(q.Get("page"))
+				// subs := strings.Split(link.URL, "&page=")
+				// lastPage, err := strconv.Atoi(subs[len(subs)-1])
+				// fmt.Printf("query  is :  %+v\n",q)
 
-					q := u.Query()
+				// fmt.Printf("lastPage is :  %+v\n",lastPage)
 
-					lastPage, err := strconv.Atoi(q.Get("page"))
-					if err != nil {
+				if err != nil {
 						log.Errorf("Unable to convert page substring to int, Error: %s", err)
-					}
-
-					// add all pages to the slice of targets to return
-					for page := 2; page <= lastPage; page++ {
-						q.Set("page", strconv.Itoa(page))
-						u.RawQuery = q.Encode()
-						paginated = append(paginated, u.String())
-					}
-
-					break
 				}
+
+
+				// add all pages to the slice of targets to return
+				// for page := 2; page <= lastPage; page++ {
+			    for page := 2; page <= 100; page++ {
+						pageURL := fmt.Sprintf("%s?page=%v", urlTarget, page)
+						fmt.Printf("pageURL in paginateTarget loop is:  %+v\n",pageURL)
+
+						paginated = append(paginated, pageURL)
+				}
+				break
+
 			}
 		}
 	}
@@ -127,8 +128,6 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	log.Infof("Fetching %s \n", url)
 
 	resp, err := getHTTPResponse(url, token) // do this earlier
-	log.Infof("resp  is %s \n", resp)
-
 	if err != nil {
 		return fmt.Errorf("Error fetching http response: %v", err)
 	}
@@ -139,7 +138,7 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	if err != nil {
 		return fmt.Errorf("Error converting body to byte array: %v", err)
 	}
-	log.Infof("resp body is %s \n", body)
+
 	// Triggers if a user specifies an invalid or not visible repository
 	if resp.StatusCode == 404 {
 		return fmt.Errorf("Error: Received 404 status from Github API, ensure the repository URL is correct. If it's a private repository, also check the oauth token is correct")
