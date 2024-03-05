@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -145,7 +145,7 @@ func githubPullsError() *apitest.Mock {
 }
 
 func readFile(path string) string {
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
@@ -154,7 +154,7 @@ func readFile(path string) string {
 
 func bodyContains(substr string) func(*http.Response, *http.Request) error {
 	return func(res *http.Response, req *http.Request) error {
-		bytes, err := ioutil.ReadAll(res.Body)
+		bytes, err := io.ReadAll(res.Body)
 		if err != nil {
 			panic(err)
 		}

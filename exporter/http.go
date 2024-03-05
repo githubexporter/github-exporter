@@ -2,7 +2,7 @@ package exporter
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	neturl "net/url"
 	"strconv"
@@ -111,7 +111,7 @@ func getResponse(url string, token string, ch chan<- *Response) error {
 	defer resp.Body.Close()
 
 	// Read the body to a byte array so it can be used elsewhere
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("Error converting body to byte array: %v", err)
 	}
