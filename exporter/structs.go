@@ -44,6 +44,7 @@ type Datum struct {
 type Release struct {
 	Name   string  `json:"name"`
 	Assets []Asset `json:"assets"`
+	Tag    string  `json:"tag_name"`
 }
 
 type Pull struct {

@@ -47,10 +47,10 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 946`)).
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
 		Assert(bodyContains(`github_repo_watchers{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 5`)).
-		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-02-28T08:25:53Z",name="myRepo_1.3.0_checksums.txt",release="1.3.0",repo="myRepo",user="myOrg"} 7292`)).
-		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-02-28T08:25:53Z",name="myRepo_1.3.0_windows_amd64.tar.gz",release="1.3.0",repo="myRepo",user="myOrg"} 21`)).
-		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_checksums.txt",release="2.0.0",repo="myRepo",user="myOrg"} 14564`)).
-		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_windows_amd64.tar.gz",release="2.0.0",repo="myRepo",user="myOrg"} 55`)).
+		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-02-28T08:25:53Z",name="myRepo_1.3.0_checksums.txt",release="1.3.0",repo="myRepo",tag="1.3.0",user="myOrg"} 7292`)).
+		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-02-28T08:25:53Z",name="myRepo_1.3.0_windows_amd64.tar.gz",release="1.3.0",repo="myRepo",tag="1.3.0",user="myOrg"} 21`)).
+		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_checksums.txt",release="2.0.0",repo="myRepo",tag="2.0.0",user="myOrg"} 14564`)).
+		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_windows_amd64.tar.gz",release="2.0.0",repo="myRepo",tag="2.0.0",user="myOrg"} 55`)).
 		Status(http.StatusOK).
 		End()
 }

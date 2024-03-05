@@ -44,7 +44,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["ReleaseDownloads"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "release_downloads"),
 		"Download count for a given release",
-		[]string{"repo", "user", "release", "name", "created_at"}, nil,
+		[]string{"repo", "user", "release", "name", "tag", "created_at"}, nil,
 	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
@@ -77,7 +77,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 
 		for _, release := range x.Releases {
 			for _, asset := range release.Assets {
-				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, release.Name, asset.Name, asset.CreatedAt)
+				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, release.Name, asset.Name, release.Tag, asset.CreatedAt)
 			}
 		}
 		prCount := 0
