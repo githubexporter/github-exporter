@@ -3,8 +3,8 @@ LABEL maintainer="Infinity Works"
 
 ENV GO111MODULE=on
 
-COPY ./ /go/src/github.com/infinityworks/github-exporter
-WORKDIR /go/src/github.com/infinityworks/github-exporter
+COPY ./ /go/src/github.com/githubexporter/github-exporter
+WORKDIR /go/src/github.com/githubexporter/github-exporter
 
 RUN go mod download \
     && go test ./... \
