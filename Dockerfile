@@ -1,16 +1,16 @@
-FROM golang:1.19.5-buster as build
-LABEL maintainer="Infinity Works"
+FROM golang:1.22-bookworm as build
+LABEL maintainer="githubexporter"
 
 ENV GO111MODULE=on
 
-COPY ./ /go/src/github.com/infinityworks/github-exporter
-WORKDIR /go/src/github.com/infinityworks/github-exporter
+COPY ./ /go/src/github.com/githubexporter/github-exporter
+WORKDIR /go/src/github.com/githubexporter/github-exporter
 
 RUN go mod download \
     && go test ./... \
     && CGO_ENABLED=0 GOOS=linux go build -o /bin/main
 
-FROM alpine:3.17.5
+FROM alpine:3
 
 RUN apk --no-cache add ca-certificates \
      && addgroup exporter \
