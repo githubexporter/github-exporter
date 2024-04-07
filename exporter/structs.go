@@ -3,7 +3,7 @@ package exporter
 import (
 	"net/http"
 
-	"github.com/infinityworks/github-exporter/config"
+	"github.com/githubexporter/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -44,6 +44,7 @@ type Datum struct {
 type Release struct {
 	Name   string  `json:"name"`
 	Assets []Asset `json:"assets"`
+	Tag    string  `json:"tag_name"`
 }
 
 type Pull struct {

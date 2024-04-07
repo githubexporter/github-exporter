@@ -1,7 +1,10 @@
 package exporter
 
-import "github.com/prometheus/client_golang/prometheus"
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 // AddMetrics - Add's all of the metrics to a map of strings, returns the map.
 func AddMetrics() map[string]*prometheus.Desc {
@@ -21,7 +24,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["PullRequestCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "pull_request_count"),
 		"Total number of pull requests for given repository",
-		[]string{"repo"}, nil,
+		[]string{"repo", "user"}, nil,
 	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
@@ -41,7 +44,7 @@ func AddMetrics() map[string]*prometheus.Desc {
 	APIMetrics["ReleaseDownloads"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "release_downloads"),
 		"Download count for a given release",
-		[]string{"repo", "user", "release", "name", "created_at"}, nil,
+		[]string{"repo", "user", "release", "name", "tag", "created_at"}, nil,
 	)
 	APIMetrics["Limit"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "rate", "limit"),
@@ -74,7 +77,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 
 		for _, release := range x.Releases {
 			for _, asset := range release.Assets {
-				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, release.Name, asset.Name, asset.CreatedAt)
+				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, release.Name, asset.Name, release.Tag, asset.CreatedAt)
 			}
 		}
 		prCount := 0
@@ -85,7 +88,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, (x.OpenIssues - float64(prCount)), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 
 		// prCount
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login)
 	}
 
 	// Set Rate limit stats

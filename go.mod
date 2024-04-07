@@ -1,6 +1,6 @@
-module github.com/infinityworks/github-exporter
+module github.com/githubexporter/github-exporter
 
-go 1.19
+go 1.22
 
 require (
 	github.com/bradleyfalzon/ghinstallation v1.1.1

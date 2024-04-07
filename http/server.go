@@ -1,11 +1,12 @@
 package http
 
 import (
-	"github.com/infinityworks/github-exporter/exporter"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
+
+	"github.com/githubexporter/github-exporter/exporter"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
@@ -26,7 +27,7 @@ func NewServer(exporter exporter.Exporter) *Server {
 		                <head><title>Github Exporter</title></head>
 		                <body>
 		                   <h1>GitHub Prometheus Metrics Exporter</h1>
-						   <p>For more information, visit <a href=https://github.com/infinityworks/github-exporter>GitHub</a></p>
+						   <p>For more information, visit <a href=https://github.com/githubexporter/github-exporter>GitHub</a></p>
 		                   <p><a href='` + exporter.MetricsPath() + `'>Metrics</a></p>
 		                   </body>
 		                </html>

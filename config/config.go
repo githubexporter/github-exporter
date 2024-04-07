@@ -132,7 +132,7 @@ func (c *Config) SetAPIToken(token string) {
 
 // SetAPITokenFromFile accepts a file containing an oauth2 token for usage in http.request
 func (c *Config) SetAPITokenFromFile(tokenFile string) error {
-	b, err := ioutil.ReadFile(tokenFile)
+	b, err := os.ReadFile(tokenFile)
 	if err != nil {
 		return err
 	}
@@ -181,6 +181,8 @@ func (c *Config) setScrapeURLs() error {
 	}
 
 	// Append github orginisations to the array
+  
+  
 	if len(c.organisations) > 0 {
 		for _, x := range c.organisations {
 			y := *c.apiUrl
