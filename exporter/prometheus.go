@@ -1,15 +1,9 @@
 package exporter
 
 import (
-	"context"
-	"errors"
-	"net/http"
-	"os"
 	"path"
 	"strconv"
-	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,15 +23,17 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	data := []*Datum{}
 	var err error
 
-	gitHubApp := os.Getenv("GITHUB_APP")
-	if strings.ToLower(gitHubApp) == "true" {
+	if e.Config.GitHubApp() {
 		needReAuth, err := e.isTokenExpired()
 		if err != nil {
 			log.Errorf("Error checking token expiration status: %v", err)
 			return
 		}
 		if needReAuth {
-			e.reAuth()
+			err = e.Config.SetAPITokenFromGitHubApp()
+			if err != nil {
+				log.Errorf("Error authenticating with GitHub app: %v", err)
+			}
 		}
 	}
 	// Scrape the Data from Github
@@ -79,7 +75,7 @@ func (e *Exporter) isTokenExpired() (bool, error) {
 	defer resp.Body.Close()
 	// Triggers if rate-limiting isn't enabled on private Github Enterprise installations
 	if resp.StatusCode == 404 {
-		return false, errors.New("404 Error")
+		return false, nil
 	}
 
 	limit, err := strconv.ParseFloat(resp.Header.Get("X-RateLimit-Limit"), 64)
@@ -88,33 +84,10 @@ func (e *Exporter) isTokenExpired() (bool, error) {
 		return false, err
 	}
 
-	defaultLimit := os.Getenv("GITHUB_RATE_LIMIT")
-	if len(defaultLimit) == 0 {
-		defaultLimit = "15000"
-	}
-	defaultLimitInt, err := strconv.ParseInt(defaultLimit, 10, 64)
-	if err != nil {
-		return false, err
-	}
-	if limit < float64(defaultLimitInt) {
+	defaultRateLimit := e.Config.GitHubRateLimit()
+	if limit < defaultRateLimit {
 		return true, nil
 	}
 	return false, nil
 
-}
-
-func (e *Exporter) reAuth() error {
-	gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
-	gitHubAppId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
-	gitHubAppInstalaltionId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, gitHubAppId, gitHubAppInstalaltionId, gitHubAppKeyPath)
-	if err != nil {
-		return err
-	}
-	strToken, err := itr.Token(context.Background())
-	if err != nil {
-		return err
-	}
-	e.Config.SetAPIToken(strToken)
-	return nil
 }
