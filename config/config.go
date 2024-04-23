@@ -116,27 +116,27 @@ func (c *Config) APIToken() string {
 	return c.apiToken
 }
 
-// Returns the GitHub App atuhentication value
+// Returns the GitHub App authentication value
 func (c *Config) GitHubApp() bool {
 	return c.gitHubApp
 }
 
-// SetGitHubAppKeyPath accepts a string for GitHub app private key path
+// Returns the GitHub app private key path
 func (c *Config) GitHubAppKeyPath() string {
 	return c.gitHubAppKeyPath
 }
 
-// SetGitHubAppId accepts a string for GitHub app id
+// Returns the GitHub app id
 func (c *Config) GitHubAppId() int64 {
 	return c.gitHubAppId
 }
 
-// SetGitHubAppInstallationId accepts a string for GitHub app installation id
+// Returns the GitHub app installation id
 func (c *Config) GitHubAppInstallationId() int64 {
 	return c.gitHubAppInstallationId
 }
 
-// SetGitHubAppRateLimit accepts a string for GitHub RateLimit
+// Returns the GitHub RateLimit
 func (c *Config) GitHubRateLimit() float64 {
 	return c.gitHubRateLimit
 }
