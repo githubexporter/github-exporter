@@ -1,10 +1,14 @@
 package config
 
 import (
+	"context"
+	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation"
 	log "github.com/sirupsen/logrus"
 
 	"os"
@@ -15,12 +19,17 @@ import (
 // Config struct holds all of the runtime confgiguration for the application
 type Config struct {
 	*cfg.BaseConfig
-	apiUrl        *url.URL
-	repositories  []string
-	organisations []string
-	users         []string
-	apiToken      string
-	targetURLs    []string
+	apiUrl                  *url.URL
+	repositories            []string
+	organisations           []string
+	users                   []string
+	apiToken                string
+	targetURLs              []string
+	gitHubApp               bool
+	gitHubAppKeyPath        string
+	gitHubAppId             int64
+	gitHubAppInstallationId int64
+	gitHubRateLimit         float64
 }
 
 // Init populates the Config struct based on environmental runtime configuration
@@ -38,6 +47,11 @@ func Init() Config {
 		nil,
 		"",
 		nil,
+		false,
+		"",
+		0,
+		0,
+		15000,
 	}
 
 	err := appConfig.SetAPIURL(cfg.GetEnv("API_URL", "https://api.github.com"))
@@ -56,6 +70,24 @@ func Init() Config {
 	if users != "" {
 		appConfig.SetUsers(strings.Split(users, ", "))
 	}
+
+	gitHubApp := strings.ToLower(os.Getenv("GITHUB_APP"))
+	if gitHubApp == "true" {
+		gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
+		gitHubAppId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
+		gitHubAppInstalaltionId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
+		gitHubRateLimit, _ := strconv.ParseFloat(cfg.GetEnv("GITHUB_RATE_LIMIT", "15000"), 64)
+		appConfig.SetGitHubApp(true)
+		appConfig.SetGitHubAppKeyPath(gitHubAppKeyPath)
+		appConfig.SetGitHubAppId(gitHubAppId)
+		appConfig.SetGitHubAppInstallationId(gitHubAppInstalaltionId)
+		appConfig.SetGitHubRateLimit(gitHubRateLimit)
+		err = appConfig.SetAPITokenFromGitHubApp()
+		if err != nil {
+			log.Errorf("Error initializing Configuration, Error: %v", err)
+		}
+	}
+
 	tokenEnv := os.Getenv("GITHUB_TOKEN")
 	tokenFile := os.Getenv("GITHUB_TOKEN_FILE")
 	if tokenEnv != "" {
@@ -66,7 +98,6 @@ func Init() Config {
 			log.Errorf("Error initialising Configuration, Error: %v", err)
 		}
 	}
-
 	return appConfig
 }
 
@@ -83,6 +114,31 @@ func (c *Config) TargetURLs() []string {
 // Returns the oauth2 token for usage in http.request
 func (c *Config) APIToken() string {
 	return c.apiToken
+}
+
+// Returns the GitHub App authentication value
+func (c *Config) GitHubApp() bool {
+	return c.gitHubApp
+}
+
+// Returns the GitHub app private key path
+func (c *Config) GitHubAppKeyPath() string {
+	return c.gitHubAppKeyPath
+}
+
+// Returns the GitHub app id
+func (c *Config) GitHubAppId() int64 {
+	return c.gitHubAppId
+}
+
+// Returns the GitHub app installation id
+func (c *Config) GitHubAppInstallationId() int64 {
+	return c.gitHubAppInstallationId
+}
+
+// Returns the GitHub RateLimit
+func (c *Config) GitHubRateLimit() float64 {
+	return c.gitHubRateLimit
 }
 
 // Sets the base API URL returning an error if the supplied string is not a valid URL
@@ -125,6 +181,45 @@ func (c *Config) SetAPITokenFromFile(tokenFile string) error {
 	return nil
 }
 
+// SetGitHubApp accepts a boolean for GitHub app authentication
+func (c *Config) SetGitHubApp(githubApp bool) {
+	c.gitHubApp = githubApp
+}
+
+// SetGitHubAppKeyPath accepts a string for GitHub app private key path
+func (c *Config) SetGitHubAppKeyPath(gitHubAppKeyPath string) {
+	c.gitHubAppKeyPath = gitHubAppKeyPath
+}
+
+// SetGitHubAppId accepts a string for GitHub app id
+func (c *Config) SetGitHubAppId(gitHubAppId int64) {
+	c.gitHubAppId = gitHubAppId
+}
+
+// SetGitHubAppInstallationId accepts a string for GitHub app installation id
+func (c *Config) SetGitHubAppInstallationId(gitHubAppInstallationId int64) {
+	c.gitHubAppInstallationId = gitHubAppInstallationId
+}
+
+// SetGitHubAppRateLimit accepts a string for GitHub RateLimit
+func (c *Config) SetGitHubRateLimit(gitHubRateLimit float64) {
+	c.gitHubRateLimit = gitHubRateLimit
+}
+
+// SetAPITokenFromGitHubApp generating api token from github app configuration.
+func (c *Config) SetAPITokenFromGitHubApp() error {
+	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, c.gitHubAppId, c.gitHubAppInstallationId, c.gitHubAppKeyPath)
+	if err != nil {
+		return err
+	}
+	strToken, err := itr.Token(context.Background())
+	if err != nil {
+		return err
+	}
+	c.SetAPIToken(strToken)
+	return nil
+}
+
 // Init populates the Config struct based on environmental runtime configuration
 // All URL's are added to the TargetURL's string array
 func (c *Config) setScrapeURLs() error {
@@ -152,6 +247,7 @@ func (c *Config) setScrapeURLs() error {
 	}
 
 	// Append github orginisations to the array
+
 	if len(c.organisations) > 0 {
 		for _, x := range c.organisations {
 			y := *c.apiUrl

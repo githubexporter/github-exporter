@@ -21,6 +21,11 @@ This exporter is setup to take input from environment variables. All variables a
   the format "user1, user2".
 * `GITHUB_TOKEN` If supplied, enables the user to supply a github authentication token that allows the API to be queried more often. Optional, but recommended.
 * `GITHUB_TOKEN_FILE` If supplied _instead of_ `GITHUB_TOKEN`, enables the user to supply a path to a file containing a github authentication token that allows the API to be queried more often. Optional, but recommended.
+* `GITHUB_APP` If true , authenticates ass GitHub app to the API.
+* `GITHUB_APP_ID` The APP ID of the GitHub App.
+* `GITHUB_APP_INSTALLATION_ID` The INSTALLATION ID of the GitHub App.
+* `GITHUB_APP_KEY_PATH` The path to the github private key.
+* `GITHUB_RATE_LIMIT` The RATE LIMIT that suppose to be for github app (default is 15,000). If the exporter sees the value is below this variable it generating new token for the app.
 * `API_URL` Github API URL, shouldn't need to change this. Defaults to `https://api.github.com`
 * `LISTEN_PORT` The port you wish to run the container on, the Dockerfile defaults this to `9171`
 * `METRICS_PATH` the metrics URL path you wish to use, defaults to `/metrics`
@@ -34,10 +39,14 @@ Run manually from Docker Hub:
 docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" githubexporter/github-exporter
 ```
 
+Run manually from Docker Hub (With GitHub App):
+```
+docker run -d --restart=always -p 9171:9171 --read-only -v ./key.pem:/key.pem -e GITHUB_APP=true -e GITHUB_APP_ID= -e GITHUB_APP_INSTALLATION_ID= -e GITHUB_APP_KEY_PATH=/key.pem <IMAGE_NAME>
+```
+
 Build a docker image:
 ```
 docker build -t <image-name> .
-docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" <image-name>
 ```
 
 ## Docker compose
@@ -54,6 +63,29 @@ github-exporter:
     environment:
       - REPOS=<REPOS you want to monitor>
       - GITHUB_TOKEN=<your github api token>
+```
+
+## Docker compose (GitHub App)
+
+```
+github-exporter-github-app:
+  tty: true
+  stdin_open: true
+  expose:
+    - 9171
+  ports:
+    - 9171:9171
+  build: .
+  environment:
+    - LOG_LEVEL=debug
+    - LISTEN_PORT=9171
+    - GITHUB_APP=true
+    - GITHUB_APP_ID=
+    - GITHUB_APP_INSTALLATION_ID=
+    - GITHUB_APP_KEY_PATH=/key.pem
+  restart: unless-stopped
+  volumes:
+    - "./key.pem:/key.pem:ro"
 
 ```
 
