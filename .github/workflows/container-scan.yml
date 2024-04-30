@@ -25,11 +25,12 @@ jobs:
       - name: Run Trivy
         uses: aquasecurity/trivy-action@master
         with:
+          scan-type: image
           image-ref: 'githubexporter/github-exporter:${{ steps.get-current-version.outputs.version }}'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+#          format: 'sarif'
+#          output: 'trivy-results.sarif'
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
