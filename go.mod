@@ -4,9 +4,9 @@ go 1.22
 
 require (
 	github.com/bradleyfalzon/ghinstallation v1.1.1
-	github.com/google/go-github/v59 v59.0.0
+	github.com/google/go-github/v61 v61.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/migueleliasweb/go-github-mock v0.0.23
+	github.com/migueleliasweb/go-github-mock v0.0.24-0.20240506121511-12eaf763b1f7
 	github.com/prometheus/client_golang v1.19.1
 	github.com/stretchr/testify v1.8.0
 )
@@ -16,12 +16,10 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-github/v29 v29.0.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
-	github.com/kr/pretty v0.3.1 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
+	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect

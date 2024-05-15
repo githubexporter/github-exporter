@@ -5,15 +5,13 @@ import (
 	"io"
 	"log/slog"
 	"strings"
-
-	"github.com/githubexporter/github-exporter/internal/config"
 )
 
-func New(cfg *config.Config, w io.Writer) (*slog.Logger, error) {
+func New(logLevel string, logFormat string, w io.Writer) (*slog.Logger, error) {
 	var handler slog.Handler
 
 	var level slog.Level
-	err := level.UnmarshalText([]byte(cfg.LogLevel))
+	err := level.UnmarshalText([]byte(logLevel))
 	if err != nil {
 		return nil, fmt.Errorf("failed to configure logging level: %w", err)
 	}
@@ -22,13 +20,13 @@ func New(cfg *config.Config, w io.Writer) (*slog.Logger, error) {
 		Level: level,
 	}
 
-	switch strings.ToLower(cfg.LogFormat) {
+	switch strings.ToLower(logFormat) {
 	case "plain", "text":
 		handler = slog.NewTextHandler(w, opts)
 	case "json":
 		handler = slog.NewJSONHandler(w, opts)
 	default:
-		return nil, fmt.Errorf("unknown logging format: %s", cfg.LogFormat)
+		return nil, fmt.Errorf("unknown logging format: %s", logFormat)
 	}
 	return slog.New(handler), nil
 }

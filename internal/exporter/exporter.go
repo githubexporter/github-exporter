@@ -3,7 +3,7 @@ package exporter
 import (
 	"context"
 	"github.com/githubexporter/github-exporter/internal/config"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"strconv"

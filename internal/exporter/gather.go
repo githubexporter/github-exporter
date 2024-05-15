@@ -2,7 +2,7 @@ package exporter
 
 import (
 	"fmt"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"strings"
 )
 

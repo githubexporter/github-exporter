@@ -6,7 +6,7 @@ import (
 	"github.com/githubexporter/github-exporter/internal/exporter"
 	"github.com/githubexporter/github-exporter/internal/http"
 	"github.com/githubexporter/github-exporter/internal/logging"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"os"
 )
 
@@ -17,7 +17,7 @@ func main() {
 		panic(err)
 	}
 
-	logger, err := logging.New(cfg, os.Stdout)
+	logger, err := logging.New(cfg.LogLevel, cfg.LogFormat, os.Stdout)
 	if err != nil {
 		panic(err)
 	}
