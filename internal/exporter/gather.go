@@ -2,8 +2,9 @@ package exporter
 
 import (
 	"fmt"
-	"github.com/google/go-github/v61/github"
 	"strings"
+
+	"github.com/google/go-github/v61/github"
 )
 
 const resultsPerPage = 100

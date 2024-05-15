@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"os"
+
+	"github.com/google/go-github/v61/github"
+
 	"github.com/githubexporter/github-exporter/internal/config"
 	"github.com/githubexporter/github-exporter/internal/exporter"
 	"github.com/githubexporter/github-exporter/internal/http"
 	"github.com/githubexporter/github-exporter/internal/logging"
-	"github.com/google/go-github/v61/github"
-	"os"
 )
 
 func main() {

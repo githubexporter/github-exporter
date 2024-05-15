@@ -2,15 +2,17 @@ package exporter
 
 import (
 	"context"
-	"github.com/githubexporter/github-exporter/internal/config"
-	"github.com/githubexporter/github-exporter/internal/logging"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/google/go-github/v61/github"
 	"github.com/migueleliasweb/go-github-mock/src/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
-	"time"
+
+	"github.com/githubexporter/github-exporter/internal/config"
+	"github.com/githubexporter/github-exporter/internal/logging"
 )
 
 func TestGetRateLimits(t *testing.T) {

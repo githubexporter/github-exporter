@@ -12,8 +12,13 @@ RUN go mod download \
 FROM alpine:3
 
 RUN apk --no-cache add ca-certificates \
-     && addgroup exporter \
-     && adduser -S -G exporter exporter
+        apk update && \
+        apk upgrade && \
+        apk cache clean
+
+RUN addgroup exporter \
+     && adduser -S -G exporter exporter \
+
 ADD VERSION .
 USER exporter
 COPY --from=build /bin/github-exporter /bin/github-exporter

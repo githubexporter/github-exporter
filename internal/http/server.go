@@ -4,9 +4,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/githubexporter/github-exporter/internal/exporter"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/githubexporter/github-exporter/internal/exporter"
 )
 
 type Server struct {

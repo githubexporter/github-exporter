@@ -2,11 +2,13 @@ package exporter
 
 import (
 	"context"
-	"github.com/githubexporter/github-exporter/internal/config"
-	"github.com/google/go-github/v61/github"
-	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"strconv"
+
+	"github.com/google/go-github/v61/github"
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/githubexporter/github-exporter/internal/config"
 )
 
 // Exporter is used to store Metrics data and embeds the config struct.

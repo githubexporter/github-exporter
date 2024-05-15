@@ -3,11 +3,12 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/bradleyfalzon/ghinstallation"
-	"github.com/kelseyhightower/envconfig"
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/bradleyfalzon/ghinstallation"
+	"github.com/kelseyhightower/envconfig"
 
 	"os"
 )
