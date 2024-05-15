@@ -1,9 +1,8 @@
 version: "2"
 
+# TODO - ensure best distroless settings
 services:
   github-exporter:
-    tty: true
-    stdin_open: true
     expose:
       - 9171
     ports:

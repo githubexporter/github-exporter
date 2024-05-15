@@ -7,4 +7,7 @@ test:
 	@go test -v -race ./...
 
 build:
-	@go build -o main
+	@go build -o github-exporter
+
+goimports:
+	@goimports -w -local "github.com/githubexporter/github-exporter/" .
