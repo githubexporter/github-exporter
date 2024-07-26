@@ -151,19 +151,28 @@ func (c *Config) SetAPIURL(u string) error {
 // Overrides the entire list of repositories
 func (c *Config) SetRepositories(repos []string) {
 	c.repositories = repos
-	c.setScrapeURLs()
+	err := c.setScrapeURLs()
+	if err != nil {
+		return
+	}
 }
 
 // Overrides the entire list of organisations
 func (c *Config) SetOrganisations(orgs []string) {
 	c.organisations = orgs
-	c.setScrapeURLs()
+	err := c.setScrapeURLs()
+	if err != nil {
+		return
+	}
 }
 
 // Overrides the entire list of users
 func (c *Config) SetUsers(users []string) {
 	c.users = users
-	c.setScrapeURLs()
+	err := c.setScrapeURLs()
+	if err != nil {
+		return
+	}
 }
 
 // SetAPIToken accepts a string oauth2 token for usage in http.request

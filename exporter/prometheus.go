@@ -53,6 +53,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	// Set prometheus gauge metrics using the data gathered
 	err = e.processMetrics(data, rates, ch)
+	log.Println(data[0].Clones.Count)
+	log.Println(data[0].Views.Count)
 
 	if err != nil {
 		log.Error("Error Processing Metrics", err)

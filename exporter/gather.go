@@ -27,7 +27,10 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 		// This code checks handles this variation.
 		if isArray(response.body) {
 			ds := []*Datum{}
-			json.Unmarshal(response.body, &ds)
+			err := json.Unmarshal(response.body, &ds)
+			if err != nil {
+				return nil, err
+			}
 			data = append(data, ds...)
 		} else {
 			d := new(Datum)
@@ -40,7 +43,18 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 			if strings.Contains(response.url, "/repos/") {
 				getPRs(e, response.url, &d.Pulls)
 			}
-			json.Unmarshal(response.body, &d)
+			// Get Clones
+			if strings.Contains(response.url, "/repos/") {
+				getClones(e, response.url, &d.Clones)
+			}
+			// Get Views
+			if strings.Contains(response.url, "/repos/") {
+				getViews(e, response.url, &d.Views)
+			}
+			err := json.Unmarshal(response.body, &d)
+			if err != nil {
+				return nil, err
+			}
 			data = append(data, d)
 		}
 
@@ -105,7 +119,11 @@ func getReleases(e *Exporter, url string, data *[]Release) {
 		log.Errorf("Unable to obtain releases from API, Error: %s", err)
 	}
 
-	json.Unmarshal(releasesResponse[0].body, &data)
+	err = json.Unmarshal(releasesResponse[0].body, &data)
+	if err != nil {
+		log.Errorf("Unable to unmarshal releases from API, Error: %s", err)
+		return
+	}
 }
 
 func getPRs(e *Exporter, url string, data *[]Pull) {
@@ -118,7 +136,45 @@ func getPRs(e *Exporter, url string, data *[]Pull) {
 		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
 	}
 
-	json.Unmarshal(pullsResponse[0].body, &data)
+	err = json.Unmarshal(pullsResponse[0].body, &data)
+	if err != nil {
+		log.Errorf("Unable to unmarshal pull requests from API, Error: %s", err)
+		return
+	}
+}
+
+func getClones(e *Exporter, url string, data *Clone) {
+	i := strings.Index(url, "?")
+	baseURL := url[:i]
+	clonesURL := baseURL + "/traffic/clones"
+	clonesResponse, err := asyncHTTPGets([]string{clonesURL}, e.APIToken())
+
+	if err != nil {
+		log.Errorf("Unable to obtain clones from API, Error: %s", err)
+	}
+
+	err = json.Unmarshal(clonesResponse[0].body, &data)
+	if err != nil {
+		log.Errorf("Unable to unmarshal clones from API, Error: %s", err)
+		return
+	}
+}
+
+func getViews(e *Exporter, url string, data *View) {
+	i := strings.Index(url, "?")
+	baseURL := url[:i]
+	viewsURL := baseURL + "/traffic/views"
+	viewsResponse, err := asyncHTTPGets([]string{viewsURL}, e.APIToken())
+
+	if err != nil {
+		log.Errorf("Unable to obtain clones from API, Error: %s", err)
+	}
+
+	err = json.Unmarshal(viewsResponse[0].body, &data)
+	if err != nil {
+		log.Errorf("Unable to unmarshal views from API, Error: %s", err)
+		return
+	}
 }
 
 // isArray simply looks for key details that determine if the JSON response is an array or not.

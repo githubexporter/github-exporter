@@ -16,6 +16,26 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Total number of Stars for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
+	APIMetrics["Clones"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "clones"),
+		"Total number of Clones for given repository",
+		[]string{"repo", "user", "private", "clone", "archived", "license", "language"}, nil,
+	)
+	APIMetrics["UniqueClones"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "unique_clones"),
+		"Total number of Unique Clones for given repository",
+		[]string{"repo", "user", "private", "clone", "archived", "license", "language"}, nil,
+	)
+	APIMetrics["Views"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "views"),
+		"Total number of Views for given repository",
+		[]string{"repo", "user", "private", "view", "archived", "license", "language"}, nil,
+	)
+	APIMetrics["UniqueViews"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "unique_views"),
+		"Total number of Unique Views for given repository",
+		[]string{"repo", "user", "private", "view", "archived", "license", "language"}, nil,
+	)
 	APIMetrics["OpenIssues"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "open_issues"),
 		"Total number of open issues for given repository",
@@ -75,6 +95,12 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, x.Watchers, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, x.Size, x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 
+		// Set traffic metrics
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Clones"], prometheus.GaugeValue, float64(x.Clones.Count), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["UniqueClones"], prometheus.GaugeValue, float64(x.Clones.Uniques), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Views"], prometheus.GaugeValue, float64(x.Views.Count), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["UniqueViews"], prometheus.GaugeValue, float64(x.Views.Uniques), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
+
 		for _, release := range x.Releases {
 			for _, asset := range release.Assets {
 				ch <- prometheus.MustNewConstMetric(e.APIMetrics["ReleaseDownloads"], prometheus.GaugeValue, float64(asset.Downloads), x.Name, x.Owner.Login, release.Name, asset.Name, release.Tag, asset.CreatedAt)
@@ -89,6 +115,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 
 		// prCount
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login)
+
 	}
 
 	// Set Rate limit stats

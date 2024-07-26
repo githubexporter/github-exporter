@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/githubexporter/github-exporter/config"
 	"github.com/prometheus/client_golang/prometheus"
@@ -39,6 +40,8 @@ type Datum struct {
 	Size       float64 `json:"size"`
 	Releases   []Release
 	Pulls      []Pull
+	Clones     Clone
+	Views      View
 }
 
 type Release struct {
@@ -59,6 +62,26 @@ type Asset struct {
 	Size      int64  `json:"size"`
 	Downloads int32  `json:"download_count"`
 	CreatedAt string `json:"created_at"`
+}
+
+type Clone struct {
+	Count   int `json:"count"`
+	Uniques int `json:"uniques"`
+	Clones  []struct {
+		Timestamp time.Time `json:"timestamp"`
+		Count     int       `json:"count"`
+		Uniques   int       `json:"uniques"`
+	} `json:"clones"`
+}
+
+type View struct {
+	Count   int `json:"count"`
+	Uniques int `json:"uniques"`
+	Views   []struct {
+		Timestamp time.Time `json:"timestamp"`
+		Count     int       `json:"count"`
+		Uniques   int       `json:"uniques"`
+	} `json:"views"`
 }
 
 // RateLimits is used to store rate limit data into a struct
