@@ -4,19 +4,17 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
 
-	"github.com/bradleyfalzon/ghinstallation"
-	log "github.com/sirupsen/logrus"
-
-	"os"
-
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	cfg "github.com/infinityworks/go-common/config"
+	log "github.com/sirupsen/logrus"
 )
 
-// Config struct holds all of the runtime confgiguration for the application
+// Config struct holds all the runtime configuration for the application
 type Config struct {
 	*cfg.BaseConfig
 	apiUrl                  *url.URL
@@ -75,12 +73,12 @@ func Init() Config {
 	if gitHubApp == "true" {
 		gitHubAppKeyPath := os.Getenv("GITHUB_APP_KEY_PATH")
 		gitHubAppId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_ID"), 10, 64)
-		gitHubAppInstalaltionId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
+		gitHubAppInstallationId, _ := strconv.ParseInt(os.Getenv("GITHUB_APP_INSTALLATION_ID"), 10, 64)
 		gitHubRateLimit, _ := strconv.ParseFloat(cfg.GetEnv("GITHUB_RATE_LIMIT", "15000"), 64)
 		appConfig.SetGitHubApp(true)
 		appConfig.SetGitHubAppKeyPath(gitHubAppKeyPath)
 		appConfig.SetGitHubAppId(gitHubAppId)
-		appConfig.SetGitHubAppInstallationId(gitHubAppInstalaltionId)
+		appConfig.SetGitHubAppInstallationId(gitHubAppInstallationId)
 		appConfig.SetGitHubRateLimit(gitHubRateLimit)
 		err = appConfig.SetAPITokenFromGitHubApp()
 		if err != nil {
