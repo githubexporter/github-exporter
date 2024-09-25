@@ -1,12 +1,3 @@
-# :warning: This repository is moving to the [githubexporter](https://github.com/githubexporter) organisation at [githubexporter/github-exporter](https://github.com/githubexporter/github-exporter) :warning:
-
-Timeline of changes:
-* 22/05/2023 - All current images are available in the new Docker Hub organisation at https://hub.docker.com/r/githubexporter/github-exporter
-* 30/05/2023 - GitHub repository will be migrated to https://github.com/githubexporter/github-exporter
-* 30/05/2023 - Any new images will be pushed to the `githubexporter` Docker Hub repository only
-* 21/08/2023 - All existing images will be removed from the `infinityworks/github-exporter` Docker Hub repository.
-* 30/08/2023 - The `infinityworks/github-exporter` Docker Hub repository will be deprecated
-
 # Prometheus GitHub Exporter
 
 Exposes basic metrics for your repositories from the GitHub API, to a Prometheus compatible endpoint.
