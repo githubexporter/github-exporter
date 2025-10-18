@@ -21,14 +21,14 @@ func NewServer(exporter exporter.Exporter) *Server {
 	// This invokes the Collect method through the prometheus client libraries.
 	prometheus.MustRegister(&exporter)
 
-	r.Handle(exporter.MetricsPath(), promhttp.Handler())
+	r.Handle(exporter.MetricsPath, promhttp.Handler())
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`<html>
 		                <head><title>Github Exporter</title></head>
 		                <body>
 		                   <h1>GitHub Prometheus Metrics Exporter</h1>
 						   <p>For more information, visit <a href=https://github.com/githubexporter/github-exporter>GitHub</a></p>
-		                   <p><a href='` + exporter.MetricsPath() + `'>Metrics</a></p>
+		                   <p><a href='` + exporter.MetricsPath + `'>Metrics</a></p>
 		                   </body>
 		                </html>
 		              `))
@@ -38,5 +38,5 @@ func NewServer(exporter exporter.Exporter) *Server {
 }
 
 func (s *Server) Start() {
-	log.Fatal(http.ListenAndServe(":"+s.exporter.ListenPort(), s.Handler))
+	log.Fatal(http.ListenAndServe(":"+s.exporter.ListenPort, s.Handler))
 }

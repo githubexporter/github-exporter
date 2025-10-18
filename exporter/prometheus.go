@@ -23,17 +23,18 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	data := []*Datum{}
 	var err error
 
-	if e.Config.GitHubApp() {
+	if e.Config.GitHubApp {
 		needReAuth, err := e.isTokenExpired()
 		if err != nil {
 			log.Errorf("Error checking token expiration status: %v", err)
 			return
 		}
 		if needReAuth {
-			err = e.Config.SetAPITokenFromGitHubApp()
+			token, err := e.Config.APITokenFromGitHubApp()
 			if err != nil {
 				log.Errorf("Error authenticating with GitHub app: %v", err)
 			}
+			e.GithubToken = token
 		}
 	}
 	// Scrape the Data from Github
@@ -64,10 +65,10 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *Exporter) isTokenExpired() (bool, error) {
-	u := *e.APIURL()
+	u := *e.ApiUrl
 	u.Path = path.Join(u.Path, "rate_limit")
 
-	resp, err := getHTTPResponse(u.String(), e.APIToken())
+	resp, err := getHTTPResponse(u.String(), e.GithubToken)
 
 	if err != nil {
 		return false, err
@@ -84,7 +85,7 @@ func (e *Exporter) isTokenExpired() (bool, error) {
 		return false, err
 	}
 
-	defaultRateLimit := e.Config.GitHubRateLimit()
+	defaultRateLimit := e.Config.GitHubRateLimit
 	if limit < defaultRateLimit {
 		return true, nil
 	}

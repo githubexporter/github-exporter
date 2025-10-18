@@ -15,7 +15,7 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 
 	data := []*Datum{}
 
-	responses, err := asyncHTTPGets(e.TargetURLs(), e.APIToken())
+	responses, err := asyncHTTPGets(e.TargetURLs(), e.GithubToken)
 
 	if err != nil {
 		return data, err
@@ -55,10 +55,10 @@ func (e *Exporter) gatherData() ([]*Datum, error) {
 // getRates obtains the rate limit data for requests against the github API.
 // Especially useful when operating without oauth and the subsequent lower cap.
 func (e *Exporter) getRates() (*RateLimits, error) {
-	u := *e.APIURL()
+	u := *e.ApiUrl
 	u.Path = path.Join(u.Path, "rate_limit")
 
-	resp, err := getHTTPResponse(u.String(), e.APIToken())
+	resp, err := getHTTPResponse(u.String(), e.GithubToken)
 	if err != nil {
 		return &RateLimits{}, err
 	}
@@ -99,26 +99,34 @@ func getReleases(e *Exporter, url string, data *[]Release) {
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
 	releasesURL := baseURL + "/releases"
-	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.APIToken())
+	releasesResponse, err := asyncHTTPGets([]string{releasesURL}, e.GithubToken)
 
 	if err != nil {
 		log.Errorf("Unable to obtain releases from API, Error: %s", err)
+		return
 	}
 
-	json.Unmarshal(releasesResponse[0].body, &data)
+	err = json.Unmarshal(releasesResponse[0].body, &data)
+	if err != nil {
+		log.Errorf("Unable to unmarshal releases from API response, Error: %s", err)
+	}
 }
 
 func getPRs(e *Exporter, url string, data *[]Pull) {
 	i := strings.Index(url, "?")
 	baseURL := url[:i]
 	pullsURL := baseURL + "/pulls"
-	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.APIToken())
+	pullsResponse, err := asyncHTTPGets([]string{pullsURL}, e.GithubToken)
 
 	if err != nil {
 		log.Errorf("Unable to obtain pull requests from API, Error: %s", err)
+		return
 	}
 
-	json.Unmarshal(pullsResponse[0].body, &data)
+	err = json.Unmarshal(pullsResponse[0].body, &data)
+	if err != nil {
+		log.Errorf("Unable to unmarshal pulls from API response, Error: %s", err)
+	}
 }
 
 // isArray simply looks for key details that determine if the JSON response is an array or not.

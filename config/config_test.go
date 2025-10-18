@@ -1,0 +1,118 @@
+package config
+
+import (
+	"errors"
+	"net/url"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		envVars     map[string]string
+		expectedCfg *Config
+		expectedErr error
+	}{
+		{
+			name: "default config",
+			expectedCfg: &Config{
+				MetricsPath: "/metrics",
+				ListenPort:  "9171",
+				LogLevel:    "INFO",
+				AppName:     "github-exporter",
+				ApiUrl: &url.URL{
+					Scheme: "https",
+					Host:   "api.github.com",
+				},
+				Repositories:    []string{},
+				Organisations:   []string{},
+				Users:           []string{},
+				GithubToken:     "",
+				GithubTokenFile: "",
+				GitHubApp:       false,
+				GitHubAppConfig: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name: "non-default config",
+			envVars: map[string]string{
+				"METRICS_PATH": "/otherendpoint",
+				"LISTEN_PORT":  "1111",
+				"LOG_LEVEL":    "DEBUG",
+				"APP_NAME":     "other-app-name",
+				"API_URL":      "https://example.com",
+				"REPOS":        "repo1, repo2",
+				"ORGS":         "org1,org2 ",
+				"USERS":        " user1, user2 ",
+				"GITHUB_TOKEN": "token",
+			},
+			expectedCfg: &Config{
+				MetricsPath: "/otherendpoint",
+				ListenPort:  "1111",
+				LogLevel:    "DEBUG",
+				AppName:     "other-app-name",
+				ApiUrl: &url.URL{
+					Scheme: "https",
+					Host:   "example.com",
+				},
+				Repositories: []string{
+					"repo1",
+					"repo2",
+				},
+				Organisations: []string{
+					"org1",
+					"org2",
+				},
+				Users: []string{
+					"user1",
+					"user2",
+				},
+				GithubToken:     "token",
+				GithubTokenFile: "",
+				GitHubApp:       false,
+				GitHubAppConfig: nil,
+			},
+			expectedErr: nil,
+		},
+		{
+			name:        "invalid url",
+			expectedCfg: nil,
+			envVars: map[string]string{
+				"API_URL": "://invalid-url",
+			},
+			expectedErr: errors.New("processing envconfig: envconfig.Process: assigning API_URL to ApiUrl: converting '://invalid-url' to type url.URL. details: parse \"://invalid-url\": missing protocol scheme"),
+		},
+		{
+			name:        "invalid github app id",
+			expectedCfg: nil,
+			envVars: map[string]string{
+				"GITHUB_APP":    "true",
+				"GITHUB_APP_ID": "not-an-integer",
+			},
+			expectedErr: errors.New("processing GitHub App envconfig: envconfig.Process: assigning GITHUB_APP_ID to GitHubAppId: converting 'not-an-integer' to type int64. details: strconv.ParseInt: parsing \"not-an-integer\": invalid syntax"),
+		},
+		{
+			name: "github token file not found",
+			envVars: map[string]string{
+				"GITHUB_TOKEN_FILE": "/non/existent/file",
+			},
+			expectedCfg: nil,
+			expectedErr: errors.New("reading GitHub token from file: open /non/existent/file: no such file or directory"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
+			cfg, err := Init()
+
+			assert.Equal(t, tt.expectedErr, err)
+			assert.Equal(t, tt.expectedCfg, cfg)
+		})
+	}
+}

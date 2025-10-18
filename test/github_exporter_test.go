@@ -63,7 +63,10 @@ func TestGithubExporterHttpErrorHandling(t *testing.T) {
 	// Ideally a new gauge should be added to keep track of scrape errors
 	// following prometheus exporter guidelines
 	test.Mocks(
+		githubRepos(),
+		githubReleases(),
 		githubPullsError(),
+		githubRateLimit(),
 	).
 		Get("/metrics").
 		Expect(t).
@@ -86,7 +89,11 @@ func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
 func withConfig(repos string) config.Config {
 	_ = os.Setenv("REPOS", repos)
 	_ = os.Setenv("GITHUB_TOKEN", "12345")
-	return config.Init()
+	cfg, err := config.Init()
+	if err != nil {
+		panic(err)
+	}
+	return *cfg
 }
 
 func githubRepos() *apitest.Mock {
@@ -140,6 +147,7 @@ func githubPullsError() *apitest.Mock {
 		Get("https://api.github.com/repos/myOrg/myRepo/pulls").
 		Header("Authorization", "token 12345").
 		RespondWith().
+		Times(2).
 		Status(http.StatusBadRequest).
 		End()
 }
