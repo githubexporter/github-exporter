@@ -3,15 +3,16 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/bradleyfalzon/ghinstallation/v2"
-	log "github.com/sirupsen/logrus"
+	"github.com/google/go-github/v76/github"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/kelseyhightower/envconfig"
+	log "github.com/sirupsen/logrus"
 )
 
 // Config struct holds runtime configuration required for the application
@@ -150,6 +151,28 @@ func (c *Config) APITokenFromGitHubApp() (string, error) {
 	}
 
 	return strToken, nil
+}
+
+func (c *Config) GetClient() (*github.Client, error) {
+	var httpClient *http.Client
+
+	// Add custom transport for GitHub App authentication if enabled
+	if c.GitHubApp {
+		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, c.GitHubAppId, c.GitHubAppInstallationId, c.GitHubAppKeyPath)
+		if err != nil {
+			return nil, fmt.Errorf("creating GitHub App installation transport: %v", err)
+		}
+
+		httpClient.Transport = itr
+	}
+
+	client := github.NewClient(httpClient)
+
+	if c.GithubToken != "" {
+		client = client.WithAuthToken(c.GithubToken)
+	}
+
+	return client, nil
 }
 
 // mapSlice applies a function to each element of a slice and returns a new slice with the results.

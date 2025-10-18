@@ -1,9 +1,10 @@
 module github.com/githubexporter/github-exporter
 
-go 1.22
+go 1.24.0
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.11.0
+	github.com/google/go-github/v76 v76.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.20.4
 	github.com/sirupsen/logrus v1.9.3

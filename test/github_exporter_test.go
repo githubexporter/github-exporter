@@ -11,6 +11,8 @@ import (
 	"github.com/githubexporter/github-exporter/config"
 	"github.com/githubexporter/github-exporter/exporter"
 	web "github.com/githubexporter/github-exporter/http"
+	
+	"github.com/google/go-github/v76/github"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinfletcher/apitest"
 )
@@ -40,7 +42,7 @@ func TestGithubExporter(t *testing.T) {
 		Expect(t).
 		Assert(bodyContains(`github_rate_limit 60`)).
 		Assert(bodyContains(`github_rate_remaining 60`)).
-		Assert(bodyContains(`github_rate_reset 1.566853865e+09`)).
+		Assert(bodyContains(`github_rate_reset 3e+09`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 10`)).
 		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo",user="myOrg"} 3`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 2`)).
@@ -78,6 +80,7 @@ func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
 	exp := exporter.Exporter{
 		APIMetrics: exporter.AddMetrics(),
 		Config:     conf,
+		Client:     github.NewClient(nil),
 	}
 	server := web.NewServer(exp)
 
@@ -99,10 +102,8 @@ func withConfig(repos string) config.Config {
 func githubRepos() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo").
-		Header("Authorization", "token 12345").
-		Query("per_page", "100").
 		RespondWith().
-		Times(2).
+		Times(1).
 		Body(readFile("testdata/my_repo_response.json")).
 		Status(200).
 		End()
@@ -111,11 +112,9 @@ func githubRepos() *apitest.Mock {
 func githubRateLimit() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/rate_limit").
-		Header("Authorization", "token 12345").
 		RespondWith().
-		Header("X-RateLimit-Limit", "60").
-		Header("X-RateLimit-Remaining", "60").
-		Header("X-RateLimit-Reset", "1566853865").
+		Times(1).
+		Body(readFile("testdata/rate_limit_response.json")).
 		Status(http.StatusOK).
 		End()
 }
@@ -123,9 +122,8 @@ func githubRateLimit() *apitest.Mock {
 func githubReleases() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo/releases").
-		Header("Authorization", "token 12345").
 		RespondWith().
-		Times(2).
+		Times(1).
 		Body(readFile("testdata/releases_response.json")).
 		Status(http.StatusOK).
 		End()
@@ -134,9 +132,8 @@ func githubReleases() *apitest.Mock {
 func githubPulls() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo/pulls").
-		Header("Authorization", "token 12345").
 		RespondWith().
-		Times(2).
+		Times(1).
 		Body(readFile("testdata/pulls_response.json")).
 		Status(http.StatusOK).
 		End()
@@ -145,9 +142,8 @@ func githubPulls() *apitest.Mock {
 func githubPullsError() *apitest.Mock {
 	return apitest.NewMock().
 		Get("https://api.github.com/repos/myOrg/myRepo/pulls").
-		Header("Authorization", "token 12345").
 		RespondWith().
-		Times(2).
+		Times(1).
 		Status(http.StatusBadRequest).
 		End()
 }
@@ -168,7 +164,7 @@ func bodyContains(substr string) func(*http.Response, *http.Request) error {
 		}
 		response := string(bytes)
 		if !strings.Contains(response, substr) {
-			return fmt.Errorf("response did not contain substring '%s'", substr)
+			return fmt.Errorf("response did not contain substring '%s'", response)
 		}
 		return nil
 	}
