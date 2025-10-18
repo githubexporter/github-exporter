@@ -49,74 +49,15 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	// Set prometheus gauge metrics using the data gathered
 	err = e.processMetrics(data, r, ch)
-}
-
-// getRateLimits fetches the current rate limits from the GitHub API
-func (e *Exporter) getRateLimits(ctx context.Context) (*RateLimits, error) {
-	rates, _, err := e.Client.RateLimit.Get(ctx)
 	if err != nil {
-		log.Errorf("Error fetching rate limits: %v", err)
-		return nil, err
+		log.Errorf("Error processing metrics: %v", err)
 	}
-
-	r := &RateLimits{
-		Limit:     float64(rates.Core.Limit),
-		Remaining: float64(rates.Core.Remaining),
-		Reset:     float64(rates.Core.Reset.Unix()),
-	}
-
-	return r, nil
-}
-
-// getOrganisationMetrics fetches metrics for the configured organisations
-func (e *Exporter) getOrganisationMetrics(ctx context.Context) ([]*Datum, error) {
-	var data []*Datum
-	for _, o := range e.Config.Organisations {
-		repos, _, err := e.Client.Repositories.ListByOrg(ctx, o, nil)
-		if err != nil {
-			log.Errorf("Error fetching organisation repositories: %v", err)
-			continue
-		}
-		for _, repo := range repos {
-			d, err := e.parseRepo(ctx, *repo)
-			if err != nil {
-				log.Errorf("Error parsing organisation data: %v", err)
-				continue
-			}
-			data = append(data, d)
-		}
-	}
-
-	return data, nil
-}
-
-// getUserMetrics fetches metrics for the configured users
-func (e *Exporter) getUserMetrics(ctx context.Context) ([]*Datum, error) {
-	var data []*Datum
-	for _, u := range e.Config.Users {
-		repos, _, err := e.Client.Repositories.ListByUser(ctx, u, nil)
-		if err != nil {
-			log.Errorf("Error fetching user data: %v", err)
-			continue
-		}
-
-		for _, repo := range repos {
-			d, err := e.parseRepo(ctx, *repo)
-			if err != nil {
-				log.Errorf("Error parsing user data: %v", err)
-				continue
-			}
-			data = append(data, d)
-		}
-	}
-
-	return data, nil
 }
 
 // getRepoMetrics fetches metrics for the configured repositories
 func (e *Exporter) getRepoMetrics(ctx context.Context) ([]*Datum, error) {
 	var data []*Datum
-	for _, m := range e.Config.Repositories {
+	for _, m := range e.Repositories {
 		// Split the repository string into owner and name
 		parts := strings.Split(m, "/")
 		if len(parts) != 2 {

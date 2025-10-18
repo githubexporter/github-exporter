@@ -4,7 +4,7 @@ import (
 	"github.com/githubexporter/github-exporter/config"
 	"github.com/githubexporter/github-exporter/exporter"
 	"github.com/githubexporter/github-exporter/http"
-	
+
 	"github.com/google/go-github/v76/github"
 	log "github.com/sirupsen/logrus"
 )

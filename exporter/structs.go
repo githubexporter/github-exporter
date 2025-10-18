@@ -1,8 +1,6 @@
 package exporter
 
 import (
-	"net/http"
-
 	"github.com/githubexporter/github-exporter/config"
 
 	"github.com/google/go-github/v76/github"
@@ -72,12 +70,4 @@ type RateLimits struct {
 	Limit     float64
 	Remaining float64
 	Reset     float64
-}
-
-// Response struct is used to store http.Response and associated data
-type Response struct {
-	url      string
-	response *http.Response
-	body     []byte
-	err      error
 }

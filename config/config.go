@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"github.com/google/go-github/v76/github"
 	"net/http"
 	"net/url"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/google/go-github/v76/github"
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
 )
@@ -32,10 +32,9 @@ type Config struct {
 }
 
 type GitHubAppConfig struct {
-	GitHubAppKeyPath        string  `envconfig:"GITHUB_APP_KEY_PATH" required:"false" default:""`
-	GitHubAppId             int64   `envconfig:"GITHUB_APP_ID" required:"false" default:""`
-	GitHubAppInstallationId int64   `envconfig:"GITHUB_APP_INSTALLATION_ID" required:"false" default:""`
-	GitHubRateLimit         float64 `envconfig:"GITHUB_RATE_LIMIT" required:"false" default:"15000"`
+	GitHubAppKeyPath        string `envconfig:"GITHUB_APP_KEY_PATH" required:"false" default:""`
+	GitHubAppId             int64  `envconfig:"GITHUB_APP_ID" required:"false" default:""`
+	GitHubAppInstallationId int64  `envconfig:"GITHUB_APP_INSTALLATION_ID" required:"false" default:""`
 }
 
 // Init populates the Config struct based on environmental runtime configuration

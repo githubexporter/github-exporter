@@ -11,7 +11,7 @@ import (
 	"github.com/githubexporter/github-exporter/config"
 	"github.com/githubexporter/github-exporter/exporter"
 	web "github.com/githubexporter/github-exporter/http"
-	
+
 	"github.com/google/go-github/v76/github"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/steinfletcher/apitest"
