@@ -1,13 +1,29 @@
 package exporter
 
 import (
+	"fmt"
 	"strconv"
+
+	"github.com/githubexporter/github-exporter/config"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// AddMetrics - Add's all of the metrics to a map of strings, returns the map.
-func AddMetrics() map[string]*prometheus.Desc {
+func NewExporter(cfg *config.Config) (*Exporter, error) {
+	client, err := cfg.GetClient()
+	if err != nil {
+		return nil, fmt.Errorf("getting client: %w", err)
+	}
+
+	return &Exporter{
+		APIMetrics: AddMetrics(cfg),
+		Config:     *cfg,
+		Client:     client,
+	}, nil
+}
+
+// AddMetrics - Adds all the metrics to a map of strings, returns the map.
+func AddMetrics(cfg *config.Config) map[string]*prometheus.Desc {
 
 	APIMetrics := make(map[string]*prometheus.Desc)
 
@@ -46,21 +62,24 @@ func AddMetrics() map[string]*prometheus.Desc {
 		"Download count for a given release",
 		[]string{"repo", "user", "release", "name", "tag", "created_at"}, nil,
 	)
-	APIMetrics["Limit"] = prometheus.NewDesc(
-		prometheus.BuildFQName("github", "rate", "limit"),
-		"Number of API queries allowed in a 60 minute window",
-		[]string{}, nil,
-	)
-	APIMetrics["Remaining"] = prometheus.NewDesc(
-		prometheus.BuildFQName("github", "rate", "remaining"),
-		"Number of API queries remaining in the current window",
-		[]string{}, nil,
-	)
-	APIMetrics["Reset"] = prometheus.NewDesc(
-		prometheus.BuildFQName("github", "rate", "reset"),
-		"The time at which the current rate limit window resets in UTC epoch seconds",
-		[]string{}, nil,
-	)
+
+	if cfg.GitHubRateLimitEnabled {
+		APIMetrics["Limit"] = prometheus.NewDesc(
+			prometheus.BuildFQName("github", "rate", "limit"),
+			"Number of API queries allowed in a 60 minute window",
+			[]string{}, nil,
+		)
+		APIMetrics["Remaining"] = prometheus.NewDesc(
+			prometheus.BuildFQName("github", "rate", "remaining"),
+			"Number of API queries remaining in the current window",
+			[]string{}, nil,
+		)
+		APIMetrics["Reset"] = prometheus.NewDesc(
+			prometheus.BuildFQName("github", "rate", "reset"),
+			"The time at which the current rate limit window resets in UTC epoch seconds",
+			[]string{}, nil,
+		)
+	}
 
 	return APIMetrics
 }
@@ -92,9 +111,11 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 	}
 
 	// Set Rate limit stats
-	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, rates.Limit)
-	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, rates.Remaining)
-	ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, rates.Reset)
+	if e.GitHubRateLimitEnabled && rates != nil {
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, rates.Limit)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, rates.Remaining)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, rates.Reset)
+	}
 
 	return nil
 }

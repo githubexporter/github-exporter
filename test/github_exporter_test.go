@@ -78,7 +78,7 @@ func TestGithubExporterHttpErrorHandling(t *testing.T) {
 
 func apiTest(conf config.Config) (*apitest.APITest, exporter.Exporter) {
 	exp := exporter.Exporter{
-		APIMetrics: exporter.AddMetrics(),
+		APIMetrics: exporter.AddMetrics(&conf),
 		Config:     conf,
 		Client:     github.NewClient(nil),
 	}

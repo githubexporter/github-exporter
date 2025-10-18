@@ -28,17 +28,34 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	repoMetrics, err := e.getRepoMetrics(ctx)
 	if err != nil {
-		log.Errorf("Error fetching repository metrics: %v", err)
+		log.Errorf("getting repository metrics: %v", err)
 		return
 	}
 
 	data = append(data, repoMetrics...)
 
+	r, err := e.getRateLimits(ctx)
+	if err != nil {
+		log.Errorf("getting rate limit metrics: %v", err)
+		return
+	}
+
+	// Set prometheus gauge metrics using the data gathered
+	err = e.processMetrics(data, r, ch)
+	if err != nil {
+		log.Errorf("processing metrics: %v", err)
+	}
+}
+
+func (e *Exporter) getRateLimits(ctx context.Context) (*RateLimits, error) {
+	if !e.GitHubRateLimitEnabled {
+		return nil, nil
+	}
+
 	// TODO - get all rate limits, not just core
 	rates, _, err := e.Client.RateLimit.Get(ctx)
 	if err != nil {
-		log.Errorf("Error fetching rate limits: %v", err)
-		return
+		return nil, fmt.Errorf("fetching rate limits: %w", err)
 	}
 
 	r := &RateLimits{
@@ -47,11 +64,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		Reset:     float64(rates.Core.Reset.Unix()),
 	}
 
-	// Set prometheus gauge metrics using the data gathered
-	err = e.processMetrics(data, r, ch)
-	if err != nil {
-		log.Errorf("Error processing metrics: %v", err)
-	}
+	return r, nil
 }
 
 // getRepoMetrics fetches metrics for the configured repositories

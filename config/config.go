@@ -17,18 +17,19 @@ import (
 
 // Config struct holds runtime configuration required for the application
 type Config struct {
-	MetricsPath      string   `envconfig:"METRICS_PATH" required:"false" default:"/metrics"`
-	ListenPort       string   `envconfig:"LISTEN_PORT" required:"false" default:"9171"`
-	LogLevel         string   `envconfig:"LOG_LEVEL" required:"false" default:"INFO"`
-	AppName          string   `envconfig:"APP_NAME" required:"false" default:"github-exporter"`
-	ApiUrl           *url.URL `envconfig:"API_URL" required:"false" default:"https://api.github.com"`
-	Repositories     []string `envconfig:"REPOS" required:"false"`
-	Organisations    []string `envconfig:"ORGS" required:"false"`
-	Users            []string `envconfig:"USERS" required:"false"`
-	GithubToken      string   `envconfig:"GITHUB_TOKEN" required:"false"`
-	GithubTokenFile  string   `envconfig:"GITHUB_TOKEN_FILE" required:"false"`
-	GitHubApp        bool     `envconfig:"GITHUB_APP" required:"false" default:"false"`
-	*GitHubAppConfig `ignored:"true"`
+	MetricsPath            string   `envconfig:"METRICS_PATH" required:"false" default:"/metrics"`
+	ListenPort             string   `envconfig:"LISTEN_PORT" required:"false" default:"9171"`
+	LogLevel               string   `envconfig:"LOG_LEVEL" required:"false" default:"INFO"`
+	AppName                string   `envconfig:"APP_NAME" required:"false" default:"github-exporter"`
+	ApiUrl                 *url.URL `envconfig:"API_URL" required:"false" default:"https://api.github.com"`
+	Repositories           []string `envconfig:"REPOS" required:"false"`
+	Organisations          []string `envconfig:"ORGS" required:"false"`
+	Users                  []string `envconfig:"USERS" required:"false"`
+	GithubToken            string   `envconfig:"GITHUB_TOKEN" required:"false"`
+	GithubTokenFile        string   `envconfig:"GITHUB_TOKEN_FILE" required:"false"`
+	GitHubApp              bool     `envconfig:"GITHUB_APP" required:"false" default:"false"`
+	GitHubRateLimitEnabled bool     `envconfig:"GITHUB_RATE_LIMIT_ENABLED" required:"false" default:"true"`
+	*GitHubAppConfig       `ignored:"true"`
 }
 
 type GitHubAppConfig struct {
