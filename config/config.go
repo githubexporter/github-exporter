@@ -163,7 +163,7 @@ func (c *Config) GetClient() (*github.Client, error) {
 			return nil, fmt.Errorf("creating GitHub App installation transport: %v", err)
 		}
 
-		httpClient.Transport = itr
+		httpClient = &http.Client{Transport: itr}
 	}
 
 	client := github.NewClient(httpClient)
