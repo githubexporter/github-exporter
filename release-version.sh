@@ -21,4 +21,4 @@ if ! [[ "$version" =~ ^[0-9.]+$ ]]; then
   exit 1
 fi
 
-docker buildx build --platform linux/amd64 -t githubexporter/github-exporter:latest -t githubexporter/github-exporter:$version --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t githubexporter/github-exporter:$version --push .
