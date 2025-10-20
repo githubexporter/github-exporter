@@ -21,7 +21,6 @@ func TestConfig(t *testing.T) {
 				MetricsPath: "/metrics",
 				ListenPort:  "9171",
 				LogLevel:    "INFO",
-				AppName:     "github-exporter",
 				ApiUrl: &url.URL{
 					Scheme: "https",
 					Host:   "api.github.com",
@@ -43,7 +42,6 @@ func TestConfig(t *testing.T) {
 				"METRICS_PATH":              "/otherendpoint",
 				"LISTEN_PORT":               "1111",
 				"LOG_LEVEL":                 "DEBUG",
-				"APP_NAME":                  "other-app-name",
 				"API_URL":                   "https://example.com",
 				"REPOS":                     "repo1, repo2",
 				"ORGS":                      "org1,org2 ",
@@ -55,7 +53,6 @@ func TestConfig(t *testing.T) {
 				MetricsPath: "/otherendpoint",
 				ListenPort:  "1111",
 				LogLevel:    "DEBUG",
-				AppName:     "other-app-name",
 				ApiUrl: &url.URL{
 					Scheme: "https",
 					Host:   "example.com",
