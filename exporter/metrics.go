@@ -87,9 +87,16 @@ func AddMetrics(cfg *config.Config) map[string]*prometheus.Desc {
 
 // processMetrics - processes the response data and sets the metrics using it as a source
 func (e *Exporter) processMetrics(data []*Datum, rates *[]RateLimit, ch chan<- prometheus.Metric) error {
+	processed := make(map[string]struct{})
 
-	// APIMetrics - range through the data slice
 	for _, x := range data {
+		// Check if we've already processed this repo
+		repo := fmt.Sprintf("%s/%s", x.Owner.Login, x.Name)
+		if _, ok := processed[repo]; ok {
+			continue
+		}
+		processed[repo] = struct{}{}
+
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Stars"], prometheus.GaugeValue, float64(x.Stars), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Forks"], prometheus.GaugeValue, float64(x.Forks), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, float64(x.Watchers), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
