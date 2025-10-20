@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/gofri/go-github-pagination/githubpagination"
 	"github.com/google/go-github/v76/github"
 	"github.com/kelseyhightower/envconfig"
 	log "github.com/sirupsen/logrus"
@@ -22,6 +23,7 @@ type Config struct {
 	Repositories           []string `envconfig:"REPOS" required:"false"`
 	Organisations          []string `envconfig:"ORGS" required:"false"`
 	Users                  []string `envconfig:"USERS" required:"false"`
+	GitHubResultsPerPage   int      `envconfig:"GITHUB_RESULTS_PER_PAGE" required:"false" default:"100"`
 	GithubToken            string   `envconfig:"GITHUB_TOKEN" required:"false"`
 	GithubTokenFile        string   `envconfig:"GITHUB_TOKEN_FILE" required:"false"`
 	GitHubApp              bool     `envconfig:"GITHUB_APP" required:"false" default:"false"`
@@ -77,7 +79,7 @@ func Init() (*Config, error) {
 }
 
 func (c *Config) GetClient() (*github.Client, error) {
-	var httpClient *http.Client
+	transport := http.DefaultTransport
 
 	// Add custom transport for GitHub App authentication if enabled
 	if c.GitHubApp {
@@ -85,11 +87,14 @@ func (c *Config) GetClient() (*github.Client, error) {
 		if err != nil {
 			return nil, fmt.Errorf("creating GitHub App installation transport: %v", err)
 		}
-
-		httpClient = &http.Client{Transport: itr}
+		transport = itr
 	}
 
-	client := github.NewClient(httpClient)
+	paginator := githubpagination.NewClient(transport,
+		githubpagination.WithPerPage(c.GitHubResultsPerPage),
+	)
+
+	client := github.NewClient(paginator)
 
 	if c.GithubToken != "" {
 		client = client.WithAuthToken(c.GithubToken)

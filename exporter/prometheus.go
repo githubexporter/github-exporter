@@ -122,7 +122,6 @@ func (e *Exporter) parseRepo(ctx context.Context, repo github.Repository) (*Datu
 	repoOwner := repo.GetOwner().GetLogin()
 	repoName := repo.GetName()
 
-	// TODO - check pagination
 	rel, _, err := e.Client.Repositories.ListReleases(ctx, repoOwner, repoName, nil)
 	if err != nil {
 		return nil, fmt.Errorf("listing releases: %w", err)

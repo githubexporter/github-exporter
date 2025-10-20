@@ -6,6 +6,7 @@ toolchain go1.25.2
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0
+	github.com/gofri/go-github-pagination v1.0.1
 	github.com/google/go-github/v76 v76.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/prometheus/client_golang v1.23.2

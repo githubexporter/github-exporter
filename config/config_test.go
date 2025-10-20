@@ -28,6 +28,7 @@ func TestConfig(t *testing.T) {
 				Repositories:           []string{},
 				Organisations:          []string{},
 				Users:                  []string{},
+				GitHubResultsPerPage:   100,
 				GithubToken:            "",
 				GithubTokenFile:        "",
 				GitHubApp:              false,
@@ -46,6 +47,7 @@ func TestConfig(t *testing.T) {
 				"REPOS":                     "repo1, repo2",
 				"ORGS":                      "org1,org2 ",
 				"USERS":                     " user1, user2 ",
+				"GITHUB_RESULTS_PER_PAGE":   "50",
 				"GITHUB_TOKEN":              "token",
 				"GITHUB_RATE_LIMIT_ENABLED": "false",
 			},
@@ -69,6 +71,7 @@ func TestConfig(t *testing.T) {
 					"user1",
 					"user2",
 				},
+				GitHubResultsPerPage:   50,
 				GithubToken:            "token",
 				GithubTokenFile:        "",
 				GitHubApp:              false,
@@ -93,6 +96,14 @@ func TestConfig(t *testing.T) {
 				"GITHUB_APP_ID": "not-an-integer",
 			},
 			expectedErr: errors.New("processing GitHub App envconfig: envconfig.Process: assigning GITHUB_APP_ID to GitHubAppId: converting 'not-an-integer' to type int64. details: strconv.ParseInt: parsing \"not-an-integer\": invalid syntax"),
+		},
+		{
+			name:        "invalid log level",
+			expectedCfg: nil,
+			envVars: map[string]string{
+				"LOG_LEVEL": "boop",
+			},
+			expectedErr: errors.New("parsing log level: not a valid logrus Level: \"boop\""),
 		},
 		{
 			name: "github token file not found",
