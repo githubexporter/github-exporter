@@ -34,6 +34,22 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 	data = append(data, repoMetrics...)
 
+	userMetrics, err := e.getUserMetrics(ctx)
+	if err != nil {
+		log.Errorf("getting user metrics: %v", err)
+		return
+	}
+
+	data = append(data, userMetrics...)
+
+	orgMetrics, err := e.getOrgMetrics(ctx)
+	if err != nil {
+		log.Errorf("getting organisation metrics: %v", err)
+		return
+	}
+
+	data = append(data, orgMetrics...)
+
 	r, err := e.getRateLimits(ctx)
 	if err != nil {
 		log.Errorf("getting rate limit metrics: %v", err)
@@ -113,6 +129,54 @@ func (e *Exporter) getRepoMetrics(ctx context.Context) ([]*Datum, error) {
 		}
 
 		data = append(data, d)
+	}
+
+	return data, nil
+}
+
+// getUserMetrics fetches metrics for the configured users
+func (e *Exporter) getUserMetrics(ctx context.Context) ([]*Datum, error) {
+	var data []*Datum
+	for _, m := range e.Users {
+		repos, _, err := e.Client.Repositories.ListByUser(ctx, m, nil)
+		if err != nil {
+			log.Errorf("Error fetching user data: %v", err)
+			continue
+		}
+
+		for _, repo := range repos {
+			d, err := e.parseRepo(ctx, *repo)
+			if err != nil {
+				log.Errorf("Error parsing user repository data: %v", err)
+				continue
+			}
+
+			data = append(data, d)
+		}
+
+	}
+	return data, nil
+}
+
+// getOrgMetrics fetches metrics for the configured organisations
+func (e *Exporter) getOrgMetrics(ctx context.Context) ([]*Datum, error) {
+	var data []*Datum
+	for _, m := range e.Organisations {
+		repos, _, err := e.Client.Repositories.ListByOrg(ctx, m, nil)
+		if err != nil {
+			log.Errorf("Error fetching organisation data: %v", err)
+			continue
+		}
+
+		for _, repo := range repos {
+			d, err := e.parseRepo(ctx, *repo)
+			if err != nil {
+				log.Errorf("Error parsing organisation repository data: %v", err)
+				continue
+			}
+
+			data = append(data, d)
+		}
 	}
 
 	return data, nil
