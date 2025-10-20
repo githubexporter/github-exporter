@@ -1,12 +1,10 @@
 package config
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"strings"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -65,11 +63,6 @@ func Init() (*Config, error) {
 			return nil, fmt.Errorf("processing GitHub App envconfig: %v", err)
 		}
 		cfg.GitHubAppConfig = &appCfg
-		token, err := cfg.APITokenFromGitHubApp()
-		if err != nil {
-			return nil, fmt.Errorf("generating API token from GitHub App config: %v", err)
-		}
-		cfg.GithubToken = token
 	}
 
 	// Read token from file if not set directly
@@ -82,75 +75,6 @@ func Init() (*Config, error) {
 	}
 
 	return &cfg, nil
-}
-
-func (c *Config) TargetURLs() []string {
-
-	var urls []string
-
-	opts := map[string]string{"per_page": "100"} // Used to set the Github API to return 100 results per page (max)
-
-	if len(c.Repositories) == 0 && len(c.Organisations) == 0 && len(c.Users) == 0 {
-		log.Info("No targets specified. Only rate limit endpoint will be scraped")
-	}
-
-	// Append repositories to the array
-	if len(c.Repositories) > 0 {
-		for _, x := range c.Repositories {
-			y := *c.ApiUrl
-			y.Path = path.Join(y.Path, "repos", x)
-			q := y.Query()
-			for k, v := range opts {
-				q.Add(k, v)
-			}
-			y.RawQuery = q.Encode()
-			urls = append(urls, y.String())
-		}
-	}
-
-	// Append GitHub organisations to the array
-	if len(c.Organisations) > 0 {
-		for _, x := range c.Organisations {
-			y := *c.ApiUrl
-			y.Path = path.Join(y.Path, "orgs", x, "repos")
-			q := y.Query()
-			for k, v := range opts {
-				q.Add(k, v)
-			}
-			y.RawQuery = q.Encode()
-			urls = append(urls, y.String())
-		}
-	}
-
-	if len(c.Users) > 0 {
-		for _, x := range c.Users {
-			y := *c.ApiUrl
-			y.Path = path.Join(y.Path, "users", x, "repos")
-			q := y.Query()
-			for k, v := range opts {
-				q.Add(k, v)
-			}
-			y.RawQuery = q.Encode()
-			urls = append(urls, y.String())
-		}
-	}
-
-	return urls
-}
-
-// APITokenFromGitHubApp generating api token from github app configuration.
-func (c *Config) APITokenFromGitHubApp() (string, error) {
-	itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, c.GitHubAppId, c.GitHubAppInstallationId, c.GitHubAppKeyPath)
-	if err != nil {
-		return "", err
-	}
-
-	strToken, err := itr.Token(context.Background())
-	if err != nil {
-		return "", err
-	}
-
-	return strToken, nil
 }
 
 func (c *Config) GetClient() (*github.Client, error) {

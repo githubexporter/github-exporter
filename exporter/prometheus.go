@@ -57,28 +57,28 @@ func (e *Exporter) getRateLimits(ctx context.Context) (*[]RateLimit, error) {
 		return nil, fmt.Errorf("fetching rate limits: %w", err)
 	}
 
-	rateLimits := []*github.Rate{
-		rates.ActionsRunnerRegistration,
-		rates.AuditLog,
-		rates.CodeScanningUpload,
-		rates.CodeSearch,
-		rates.Core,
-		rates.DependencySnapshots,
-		rates.GraphQL,
-		rates.IntegrationManifest,
-		rates.SCIM,
-		rates.Search,
-		rates.SourceImport,
+	rateLimits := map[string]*github.Rate{
+		"actions_runner_registration": rates.ActionsRunnerRegistration,
+		"audit_log":                   rates.AuditLog,
+		"code_scanning_upload":        rates.CodeScanningUpload,
+		"code_search":                 rates.CodeSearch,
+		"core":                        rates.Core,
+		"dependency_snapshots":        rates.DependencySnapshots,
+		"graphql":                     rates.GraphQL,
+		"integration_manifest":        rates.IntegrationManifest,
+		"scim":                        rates.SCIM,
+		"search":                      rates.Search,
+		"source_import":               rates.SourceImport,
 	}
 
 	var rls []RateLimit
 
-	for _, rate := range rateLimits {
+	for resource, rate := range rateLimits {
 		if rate == nil {
 			continue
 		}
 		r := RateLimit{
-			Resource:  rate.Resource,
+			Resource:  resource,
 			Limit:     float64(rate.Limit),
 			Remaining: float64(rate.Remaining),
 			Reset:     float64(rate.Reset.Unix()),
