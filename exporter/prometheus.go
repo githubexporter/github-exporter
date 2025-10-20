@@ -47,24 +47,46 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (e *Exporter) getRateLimits(ctx context.Context) (*RateLimits, error) {
+func (e *Exporter) getRateLimits(ctx context.Context) (*[]RateLimit, error) {
 	if !e.GitHubRateLimitEnabled {
 		return nil, nil
 	}
 
-	// TODO - get all rate limits, not just core
 	rates, _, err := e.Client.RateLimit.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching rate limits: %w", err)
 	}
 
-	r := &RateLimits{
-		Limit:     float64(rates.Core.Limit),
-		Remaining: float64(rates.Core.Remaining),
-		Reset:     float64(rates.Core.Reset.Unix()),
+	rateLimits := []*github.Rate{
+		rates.ActionsRunnerRegistration,
+		rates.AuditLog,
+		rates.CodeScanningUpload,
+		rates.CodeSearch,
+		rates.Core,
+		rates.DependencySnapshots,
+		rates.GraphQL,
+		rates.IntegrationManifest,
+		rates.SCIM,
+		rates.Search,
+		rates.SourceImport,
 	}
 
-	return r, nil
+	var rls []RateLimit
+
+	for _, rate := range rateLimits {
+		if rate == nil {
+			continue
+		}
+		r := RateLimit{
+			Resource:  rate.Resource,
+			Limit:     float64(rate.Limit),
+			Remaining: float64(rate.Remaining),
+			Reset:     float64(rate.Reset.Unix()),
+		}
+		rls = append(rls, r)
+	}
+
+	return &rls, nil
 }
 
 // getRepoMetrics fetches metrics for the configured repositories
@@ -100,6 +122,7 @@ func (e *Exporter) parseRepo(ctx context.Context, repo github.Repository) (*Datu
 	repoOwner := repo.GetOwner().GetLogin()
 	repoName := repo.GetName()
 
+	// TODO - check pagination
 	rel, _, err := e.Client.Repositories.ListReleases(ctx, repoOwner, repoName, nil)
 	if err != nil {
 		return nil, fmt.Errorf("listing releases: %w", err)

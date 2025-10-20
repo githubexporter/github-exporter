@@ -40,9 +40,21 @@ func TestGithubExporter(t *testing.T) {
 	).
 		Get("/metrics").
 		Expect(t).
-		Assert(bodyContains(`github_rate_limit 60`)).
-		Assert(bodyContains(`github_rate_remaining 60`)).
-		Assert(bodyContains(`github_rate_reset 3e+09`)).
+		Assert(bodyContains(`github_rate_limit{resource="code_search"} 60`)).
+		Assert(bodyContains(`github_rate_limit{resource="core"} 60`)).
+		Assert(bodyContains(`github_rate_limit{resource="graphql"} 0`)).
+		Assert(bodyContains(`github_rate_limit{resource="integration_manifest"} 5000`)).
+		Assert(bodyContains(`github_rate_limit{resource="search"} 10`)).
+		Assert(bodyContains(`github_rate_remaining{resource="code_search"} 60`)).
+		Assert(bodyContains(`github_rate_remaining{resource="core"} 60`)).
+		Assert(bodyContains(`github_rate_remaining{resource="graphql"} 0`)).
+		Assert(bodyContains(`github_rate_remaining{resource="integration_manifest"} 5000`)).
+		Assert(bodyContains(`github_rate_remaining{resource="search"} 10`)).
+		Assert(bodyContains(`github_rate_reset{resource="code_search"} 3e+09`)).
+		Assert(bodyContains(`github_rate_reset{resource="core"} 3e+09`)).
+		Assert(bodyContains(`github_rate_reset{resource="graphql"} 3e+09`)).
+		Assert(bodyContains(`github_rate_reset{resource="integration_manifest"} 3e+09`)).
+		Assert(bodyContains(`github_rate_reset{resource="search"} 3e+09`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 10`)).
 		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo",user="myOrg"} 3`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 2`)).

@@ -64,9 +64,10 @@ type Asset struct {
 	CreatedAt string `json:"created_at"`
 }
 
-// RateLimits is used to store rate limit data into a struct
+// RateLimit is used to store rate limit data into a struct
 // This data is later represented as a metric, captured at the end of a scrape
-type RateLimits struct {
+type RateLimit struct {
+	Resource  string
 	Limit     float64
 	Remaining float64
 	Reset     float64

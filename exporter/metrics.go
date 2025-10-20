@@ -64,20 +64,21 @@ func AddMetrics(cfg *config.Config) map[string]*prometheus.Desc {
 	)
 
 	if cfg.GitHubRateLimitEnabled {
+		rateLimitLabels := []string{"resource"}
 		APIMetrics["Limit"] = prometheus.NewDesc(
 			prometheus.BuildFQName("github", "rate", "limit"),
 			"Number of API queries allowed in a 60 minute window",
-			[]string{}, nil,
+			rateLimitLabels, nil,
 		)
 		APIMetrics["Remaining"] = prometheus.NewDesc(
 			prometheus.BuildFQName("github", "rate", "remaining"),
 			"Number of API queries remaining in the current window",
-			[]string{}, nil,
+			rateLimitLabels, nil,
 		)
 		APIMetrics["Reset"] = prometheus.NewDesc(
 			prometheus.BuildFQName("github", "rate", "reset"),
 			"The time at which the current rate limit window resets in UTC epoch seconds",
-			[]string{}, nil,
+			rateLimitLabels, nil,
 		)
 	}
 
@@ -85,7 +86,7 @@ func AddMetrics(cfg *config.Config) map[string]*prometheus.Desc {
 }
 
 // processMetrics - processes the response data and sets the metrics using it as a source
-func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- prometheus.Metric) error {
+func (e *Exporter) processMetrics(data []*Datum, rates *[]RateLimit, ch chan<- prometheus.Metric) error {
 
 	// APIMetrics - range through the data slice
 	for _, x := range data {
@@ -112,9 +113,11 @@ func (e *Exporter) processMetrics(data []*Datum, rates *RateLimits, ch chan<- pr
 
 	// Set Rate limit stats
 	if e.GitHubRateLimitEnabled && rates != nil {
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, rates.Limit)
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, rates.Remaining)
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, rates.Reset)
+		for _, r := range *rates {
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Limit"], prometheus.GaugeValue, r.Limit, r.Resource)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Remaining"], prometheus.GaugeValue, r.Remaining, r.Resource)
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Reset"], prometheus.GaugeValue, r.Reset, r.Resource)
+		}
 	}
 
 	return nil
