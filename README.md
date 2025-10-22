@@ -6,23 +6,28 @@ Exposes basic metrics for your repositories from the GitHub API, to a Prometheus
 
 This exporter is configured via environment variables. All variables are optional unless otherwise stated. Below is a list of supported configuration values:
 
-| Variable                     | Description                                                                        | Default                  |
-|------------------------------|------------------------------------------------------------------------------------|--------------------------|
-| `ORGS`                       | Comma-separated list of GitHub organizations to monitor (e.g. `org1,org2`).        |                          |
-| `REPOS`                      | Comma-separated list of repositories to monitor (e.g. `user/repo1,user/repo2`).    |                          |
-| `USERS`                      | Comma-separated list of GitHub users to monitor (e.g. `user1,user2`).              |                          |
-| `GITHUB_TOKEN`               | GitHub personal access token for API authentication.                               |                          |
-| `GITHUB_TOKEN_FILE`          | Path to a file containing a GitHub personal access token.                          |                          |
-| `GITHUB_APP`                 | Set to `true` to authenticate as a GitHub App.                                     | `false`                  |
-| `GITHUB_APP_ID`              | The App ID of the GitHub App. Required if `GITHUB_APP` is `true`.                  |                          |
-| `GITHUB_APP_INSTALLATION_ID` | The Installation ID of the GitHub App. Required if `GITHUB_APP` is `true`.         |                          |
-| `GITHUB_APP_KEY_PATH`        | Path to the GitHub App private key file. Required if `GITHUB_APP` is `true`.       |                          |
-| `GITHUB_RATE_LIMIT_ENABLED`  | Whether to fetch GitHub API rate limit metrics (`true` or `false`).                | `true`                   |
-| `GITHUB_RESULTS_PER_PAGE`    | Number of results to request per page from the GitHub API (max 100).               | `100`                    |
-| `API_URL`                    | GitHub API URL. You should not need to change this unless using GitHub Enterprise. | `https://api.github.com` |
-| `LISTEN_PORT`                | The port the exporter will listen on.                                              | `9171`                   |
-| `METRICS_PATH`               | The HTTP path to expose Prometheus metrics.                                        | `/metrics`               |
-| `LOG_LEVEL`                  | Logging level (`debug`, `info`, `warn`, `error`).                                  | `info`                   |
+| Variable                      | Description                                                                        | Default                  |
+|-------------------------------|------------------------------------------------------------------------------------|--------------------------|
+| `ORGS`                        | Comma-separated list of GitHub organizations to monitor (e.g. `org1,org2`).        |                          |
+| `REPOS`                       | Comma-separated list of repositories to monitor (e.g. `user/repo1,user/repo2`).    |                          |
+| `USERS`                       | Comma-separated list of GitHub users to monitor (e.g. `user1,user2`).              |                          |
+| `GITHUB_TOKEN`                | GitHub personal access token for API authentication.                               |                          |
+| `GITHUB_TOKEN_FILE`           | Path to a file containing a GitHub personal access token.                          |                          |
+| `GITHUB_APP`                  | Set to `true` to authenticate as a GitHub App.                                     | `false`                  |
+| `GITHUB_APP_ID`               | The App ID of the GitHub App. Required if `GITHUB_APP` is `true`.                  |                          |
+| `GITHUB_APP_INSTALLATION_ID`  | The Installation ID of the GitHub App. Required if `GITHUB_APP` is `true`.         |                          |
+| `GITHUB_APP_KEY_PATH`         | Path to the GitHub App private key file. Required if `GITHUB_APP` is `true`.       |                          |
+| `GITHUB_RATE_LIMIT_ENABLED`   | Whether to fetch GitHub API rate limit metrics (`true` or `false`).                | `true`                   |
+| `GITHUB_RESULTS_PER_PAGE`     | Number of results to request per page from the GitHub API (max 100).               | `100`                    |
+| `FETCH_REPO_RELEASES_ENABLED` | Whether to fetch repository release metrics (`true` or `false`).                   | `true`                   |
+| `FETCH_ORGS_CONCURRENCY`      | Number of concurrent requests to make when fetching organization data.             | `1`                      |
+| `FETCH_ORG_REPOS_CONCURRENCY` | Number of concurrent requests to make when fetching organization repository data.  | `1`                      |
+| `FETCH_USERS_CONCURRENCY`     | Number of concurrent requests to make when fetching user data.                     | `1`                      |
+| `FETCH_USERS_CONCURRENCY`     | Number of concurrent requests to make when fetching repository data.               | `1`                      |
+| `API_URL`                     | GitHub API URL. You should not need to change this unless using GitHub Enterprise. | `https://api.github.com` |
+| `LISTEN_PORT`                 | The port the exporter will listen on.                                              | `9171`                   |
+| `METRICS_PATH`                | The HTTP path to expose Prometheus metrics.                                        | `/metrics`               |
+| `LOG_LEVEL`                   | Logging level (`debug`, `info`, `warn`, `error`).                                  | `info`                   |
 
 ### Credential Precedence
 

@@ -16,19 +16,24 @@ import (
 
 // Config struct holds runtime configuration required for the application
 type Config struct {
-	MetricsPath            string   `envconfig:"METRICS_PATH" required:"false" default:"/metrics"`
-	ListenPort             string   `envconfig:"LISTEN_PORT" required:"false" default:"9171"`
-	LogLevel               string   `envconfig:"LOG_LEVEL" required:"false" default:"INFO"`
-	ApiUrl                 *url.URL `envconfig:"API_URL" required:"false" default:"https://api.github.com"`
-	Repositories           []string `envconfig:"REPOS" required:"false"`
-	Organisations          []string `envconfig:"ORGS" required:"false"`
-	Users                  []string `envconfig:"USERS" required:"false"`
-	GitHubResultsPerPage   int      `envconfig:"GITHUB_RESULTS_PER_PAGE" required:"false" default:"100"`
-	GithubToken            string   `envconfig:"GITHUB_TOKEN" required:"false"`
-	GithubTokenFile        string   `envconfig:"GITHUB_TOKEN_FILE" required:"false"`
-	GitHubApp              bool     `envconfig:"GITHUB_APP" required:"false" default:"false"`
-	GitHubRateLimitEnabled bool     `envconfig:"GITHUB_RATE_LIMIT_ENABLED" required:"false" default:"true"`
-	*GitHubAppConfig       `ignored:"true"`
+	MetricsPath              string   `envconfig:"METRICS_PATH" required:"false" default:"/metrics"`
+	ListenPort               string   `envconfig:"LISTEN_PORT" required:"false" default:"9171"`
+	LogLevel                 string   `envconfig:"LOG_LEVEL" required:"false" default:"INFO"`
+	ApiUrl                   *url.URL `envconfig:"API_URL" required:"false" default:"https://api.github.com"`
+	Repositories             []string `envconfig:"REPOS" required:"false"`
+	Organisations            []string `envconfig:"ORGS" required:"false"`
+	Users                    []string `envconfig:"USERS" required:"false"`
+	GitHubResultsPerPage     int      `envconfig:"GITHUB_RESULTS_PER_PAGE" required:"false" default:"100"`
+	GithubToken              string   `envconfig:"GITHUB_TOKEN" required:"false"`
+	GithubTokenFile          string   `envconfig:"GITHUB_TOKEN_FILE" required:"false"`
+	GitHubApp                bool     `envconfig:"GITHUB_APP" required:"false" default:"false"`
+	GitHubRateLimitEnabled   bool     `envconfig:"GITHUB_RATE_LIMIT_ENABLED" required:"false" default:"true"`
+	FetchRepoReleasesEnabled bool     `envconfig:"FETCH_REPO_RELEASES_ENABLED" required:"false" default:"true"`
+	FetchOrgsConcurrency     int      `envconfig:"FETCH_ORGS_CONCURRENCY" required:"false" default:"1"`
+	FetchOrgReposConcurrency int      `envconfig:"FETCH_ORG_REPOS_CONCURRENCY" required:"false" default:"1"`
+	FetchReposConcurrency    int      `envconfig:"FETCH_REPOS_CONCURRENCY" required:"false" default:"1"`
+	FetchUsersConcurrency    int      `envconfig:"FETCH_USERS_CONCURRENCY" required:"false" default:"1"`
+	*GitHubAppConfig         `ignored:"true"`
 }
 
 type GitHubAppConfig struct {

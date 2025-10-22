@@ -13,6 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/steinfletcher/apitest v1.3.8
 	github.com/stretchr/testify v1.11.1
+	golang.org/x/sync v0.15.0
 )
 
 require (

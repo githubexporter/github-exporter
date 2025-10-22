@@ -80,7 +80,6 @@ func TestGithubExporterHttpErrorHandling(t *testing.T) {
 		githubRepos(),
 		githubReleases(),
 		githubPullsError(),
-		githubRateLimit(),
 	).
 		Get("/metrics").
 		Expect(t).

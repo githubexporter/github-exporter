@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-github/v76/github"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 )
 
 // Describe - loops through the API metrics and passes them to prometheus.Describe
@@ -68,6 +69,7 @@ func (e *Exporter) getRateLimits(ctx context.Context) (*[]RateLimit, error) {
 		return nil, nil
 	}
 
+	log.Debug("fetching rate limits")
 	rates, _, err := e.Client.RateLimit.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching rate limits: %w", err)
@@ -108,27 +110,37 @@ func (e *Exporter) getRateLimits(ctx context.Context) (*[]RateLimit, error) {
 // getRepoMetrics fetches metrics for the configured repositories
 func (e *Exporter) getRepoMetrics(ctx context.Context) ([]*Datum, error) {
 	var data []*Datum
+
+	gRepos, rCtx := errgroup.WithContext(ctx)
+	gRepos.SetLimit(e.FetchReposConcurrency)
+
 	for _, m := range e.Repositories {
-		// Split the repository string into owner and name
-		parts := strings.Split(m, "/")
-		if len(parts) != 2 {
-			log.Errorf("Invalid repository format: %s", m)
-			continue
-		}
+		gRepos.Go(func() error {
+			// Split the repository string into owner and name
+			parts := strings.Split(m, "/")
+			if len(parts) != 2 {
+				return fmt.Errorf("invalid repository format: %s", m)
+			}
 
-		repo, _, err := e.Client.Repositories.Get(ctx, parts[0], parts[1])
-		if err != nil {
-			log.Errorf("Error fetching repository data: %v", err)
-			continue
-		}
+			log.Debugf("Fetching data for repository: %s", m)
+			repo, _, err := e.Client.Repositories.Get(rCtx, parts[0], parts[1])
+			if err != nil {
+				return fmt.Errorf("fetching repository data: %v", err)
+			}
 
-		d, err := e.parseRepo(ctx, *repo)
-		if err != nil {
-			log.Errorf("Error parsing repository data: %v", err)
-			continue
-		}
+			d, err := e.parseRepo(ctx, *repo)
+			if err != nil {
+				return fmt.Errorf("parsing repository data: %v", err)
+			}
 
-		data = append(data, d)
+			data = append(data, d)
+			return nil
+		})
+	}
+
+	err := gRepos.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("processing repositories: %v", err)
 	}
 
 	return data, nil
@@ -137,86 +149,124 @@ func (e *Exporter) getRepoMetrics(ctx context.Context) ([]*Datum, error) {
 // getUserMetrics fetches metrics for the configured users
 func (e *Exporter) getUserMetrics(ctx context.Context) ([]*Datum, error) {
 	var data []*Datum
-	for _, m := range e.Users {
-		repos, _, err := e.Client.Repositories.ListByUser(ctx, m, nil)
-		if err != nil {
-			log.Errorf("Error fetching user data: %v", err)
-			continue
-		}
 
-		for _, repo := range repos {
-			d, err := e.parseRepo(ctx, *repo)
+	gUsers, uCtx := errgroup.WithContext(ctx)
+	gUsers.SetLimit(e.FetchUsersConcurrency)
+
+	for _, m := range e.Users {
+		gUsers.Go(func() error {
+			log.Debugf("Fetching data for user: %s", m)
+			repos, _, err := e.Client.Repositories.ListByUser(uCtx, m, nil)
 			if err != nil {
-				log.Errorf("Error parsing user repository data: %v", err)
-				continue
+				return fmt.Errorf("fetching user data: %v", err)
 			}
 
-			data = append(data, d)
-		}
+			for _, repo := range repos {
+				d, err := e.parseRepo(ctx, *repo)
+				if err != nil {
+					return fmt.Errorf("parsing user repository data: %v", err)
+				}
 
+				data = append(data, d)
+			}
+			return nil
+		})
 	}
+
+	err := gUsers.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("processing users: %v", err)
+	}
+
 	return data, nil
 }
 
 // getOrgMetrics fetches metrics for the configured organisations
 func (e *Exporter) getOrgMetrics(ctx context.Context) ([]*Datum, error) {
 	var data []*Datum
-	for _, m := range e.Organisations {
-		repos, _, err := e.Client.Repositories.ListByOrg(ctx, m, nil)
-		if err != nil {
-			log.Errorf("Error fetching organisation data: %v", err)
-			continue
-		}
 
-		for _, repo := range repos {
-			d, err := e.parseRepo(ctx, *repo)
+	gOrgs, oCtx := errgroup.WithContext(ctx)
+	gOrgs.SetLimit(e.FetchOrgsConcurrency)
+
+	for _, m := range e.Organisations {
+		gOrgs.Go(func() error {
+			log.Debugf("Fetching data for organisation: %s", m)
+			repos, _, err := e.Client.Repositories.ListByOrg(oCtx, m, nil)
 			if err != nil {
-				log.Errorf("Error parsing organisation repository data: %v", err)
-				continue
+				return fmt.Errorf("fetching organisation data: %v", err)
 			}
 
-			data = append(data, d)
-		}
+			gRepos, rCtx := errgroup.WithContext(ctx)
+			gRepos.SetLimit(e.FetchOrgReposConcurrency)
+
+			for _, repo := range repos {
+				gRepos.Go(func() error {
+					d, err := e.parseRepo(rCtx, *repo)
+					if err != nil {
+						return fmt.Errorf("parsing organisation repository data: %w", err)
+					}
+
+					data = append(data, d)
+					return nil
+				})
+			}
+
+			err = gRepos.Wait()
+			if err != nil {
+				return fmt.Errorf("processing organisation repositories: %v", err)
+			}
+			return nil
+		})
+	}
+
+	err := gOrgs.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("processing organisations: %v", err)
 	}
 
 	return data, nil
 }
 
 func (e *Exporter) parseRepo(ctx context.Context, repo github.Repository) (*Datum, error) {
+	var releases []Release
+	var pulls []Pull
+
 	repoOwner := repo.GetOwner().GetLogin()
 	repoName := repo.GetName()
 
-	rel, _, err := e.Client.Repositories.ListReleases(ctx, repoOwner, repoName, nil)
-	if err != nil {
-		return nil, fmt.Errorf("listing releases: %w", err)
-	}
+	if e.FetchRepoReleasesEnabled {
+		log.Debugf("Fetching releases for repository: %s/%s", repoOwner, repoName)
+		rel, _, err := e.Client.Repositories.ListReleases(ctx, repoOwner, repoName, nil)
+		if err != nil {
+			return nil, fmt.Errorf("listing releases: %w", err)
+		}
 
-	var releases []Release
-	for _, release := range rel {
-		var assets []Asset
-		for _, asset := range release.Assets {
-			a := Asset{
-				Name:      asset.GetName(),
-				Size:      asset.GetSize(),
-				Downloads: asset.GetDownloadCount(),
-				CreatedAt: asset.GetCreatedAt().Format(time.RFC3339),
+		for _, release := range rel {
+			var assets []Asset
+			for _, asset := range release.Assets {
+				a := Asset{
+					Name:      asset.GetName(),
+					Size:      asset.GetSize(),
+					Downloads: asset.GetDownloadCount(),
+					CreatedAt: asset.GetCreatedAt().Format(time.RFC3339),
+				}
+				assets = append(assets, a)
 			}
-			assets = append(assets, a)
-		}
 
-		r := Release{
-			Name:   release.GetName(),
-			Tag:    release.GetTagName(),
-			Assets: assets,
+			r := Release{
+				Name:   release.GetName(),
+				Tag:    release.GetTagName(),
+				Assets: assets,
+			}
+			releases = append(releases, r)
 		}
-		releases = append(releases, r)
 	}
 
+	log.Debugf("Fetching pull requests for repository: %s/%s", repoOwner, repoName)
 	pullRequests, _, err := e.Client.PullRequests.List(ctx, repoOwner, repoName, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fetching pull requests: %w", err)
 	}
-	var pulls []Pull
 	for _, pr := range pullRequests {
 		p := Pull{
 			Url: pr.GetURL(),
