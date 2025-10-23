@@ -40,7 +40,7 @@ func AddMetrics(cfg *config.Config) map[string]*prometheus.Desc {
 	APIMetrics["PullRequestCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "pull_request_count"),
 		"Total number of pull requests for given repository",
-		[]string{"repo", "user"}, nil,
+		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
 	APIMetrics["Watchers"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "watchers"),
@@ -115,7 +115,7 @@ func (e *Exporter) processMetrics(data []*Datum, rates *[]RateLimit, ch chan<- p
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["OpenIssues"], prometheus.GaugeValue, float64(x.OpenIssues-prCount), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 
 		// prCount
-		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login)
+		ch <- prometheus.MustNewConstMetric(e.APIMetrics["PullRequestCount"], prometheus.GaugeValue, float64(prCount), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 	}
 
 	// Set Rate limit stats
