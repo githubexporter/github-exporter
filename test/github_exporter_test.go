@@ -56,7 +56,7 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_rate_reset{resource="integration_manifest"} 3e+09`)).
 		Assert(bodyContains(`github_rate_reset{resource="search"} 3e+09`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 10`)).
-		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo",user="myOrg"} 3`)).
+		Assert(bodyContains(`github_repo_pull_request_count{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 3`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 2`)).
 		Assert(bodyContains(`github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 946`)).
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
