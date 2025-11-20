@@ -101,6 +101,11 @@ func (c *Config) GetClient() (*github.Client, error) {
 
 	client := github.NewClient(paginator)
 
+	if c.ApiUrl != nil && c.ApiUrl.String() != "https://api.github.com" {
+		// Don't need to validate error as it's checked in envconfig
+		client, _ = client.WithEnterpriseURLs(c.ApiUrl.String(), c.ApiUrl.String())
+	}
+
 	if c.GithubToken != "" {
 		client = client.WithAuthToken(c.GithubToken)
 	}
