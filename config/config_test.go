@@ -142,3 +142,56 @@ func TestConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGetClient(t *testing.T) {
+	tests := []struct {
+		name         string
+		envVars      map[string]string
+		expectedHost string
+		expectedPath string
+		expectedErr  error
+	}{
+		{
+			name:         "default config",
+			expectedHost: "api.github.com",
+			expectedPath: "/",
+			expectedErr:  nil,
+		},
+		{
+			name: "non-default config",
+			envVars: map[string]string{
+				"METRICS_PATH":                "/otherendpoint",
+				"LISTEN_PORT":                 "1111",
+				"LOG_LEVEL":                   "DEBUG",
+				"API_URL":                     "https://example.com",
+				"REPOS":                       "repo1, repo2",
+				"ORGS":                        "org1,org2 ",
+				"USERS":                       " user1, user2 ",
+				"GITHUB_RESULTS_PER_PAGE":     "50",
+				"GITHUB_TOKEN":                "token",
+				"GITHUB_RATE_LIMIT_ENABLED":   "false",
+				"FETCH_REPO_RELEASES_ENABLED": "false",
+				"FETCH_ORGS_CONCURRENCY":      "2",
+				"FETCH_ORG_REPOS_CONCURRENCY": "3",
+				"FETCH_REPOS_CONCURRENCY":     "4",
+				"FETCH_USERS_CONCURRENCY":     "5",
+			},
+			expectedHost: "example.com",
+			expectedPath: "/api/v3/",
+			expectedErr:  nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for k, v := range tt.envVars {
+				t.Setenv(k, v)
+			}
+
+			cfg, _ := Init()
+			client, _ := cfg.GetClient()
+
+			assert.Equal(t, client.BaseURL.Host, tt.expectedHost)
+			assert.Equal(t, client.BaseURL.Path, tt.expectedPath)
+		})
+	}
+}
