@@ -2,7 +2,7 @@ module github.com/githubexporter/github-exporter
 
 go 1.24.0
 
-toolchain go1.25.3
+toolchain go1.25.7
 
 require (
 	github.com/bradleyfalzon/ghinstallation/v2 v2.17.0
