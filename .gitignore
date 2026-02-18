@@ -4,4 +4,7 @@
 .vscode/
 
 # Build artifact
-./main
+main
+
+# Test coverage artifact
+coverage.out
