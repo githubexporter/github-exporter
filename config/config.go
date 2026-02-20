@@ -28,6 +28,7 @@ type Config struct {
 	GithubTokenFile          string   `envconfig:"GITHUB_TOKEN_FILE" required:"false"`
 	GitHubApp                bool     `envconfig:"GITHUB_APP" required:"false" default:"false"`
 	GitHubRateLimitEnabled   bool     `envconfig:"GITHUB_RATE_LIMIT_ENABLED" required:"false" default:"true"`
+	GitHubRateLimit          float64  `envconfig:"GITHUB_RATE_LIMIT" required:"false" default:"0"`
 	FetchRepoReleasesEnabled bool     `envconfig:"FETCH_REPO_RELEASES_ENABLED" required:"false" default:"true"`
 	FetchOrgsConcurrency     int      `envconfig:"FETCH_ORGS_CONCURRENCY" required:"false" default:"1"`
 	FetchOrgReposConcurrency int      `envconfig:"FETCH_ORG_REPOS_CONCURRENCY" required:"false" default:"1"`
@@ -88,7 +89,7 @@ func (c *Config) GetClient() (*github.Client, error) {
 
 	// Add custom transport for GitHub App authentication if enabled
 	if c.GitHubApp {
-		itr, err := ghinstallation.NewKeyFromFile(http.DefaultTransport, c.GitHubAppId, c.GitHubAppInstallationId, c.GitHubAppKeyPath)
+		itr, err := ghinstallation.NewKeyFromFile(transport, c.GitHubAppId, c.GitHubAppInstallationId, c.GitHubAppKeyPath)
 		if err != nil {
 			return nil, fmt.Errorf("creating GitHub App installation transport: %v", err)
 		}

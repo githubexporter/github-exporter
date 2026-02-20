@@ -57,6 +57,9 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Refresh client if rate limit threshold enabled
+	e.rateLimitRefresh(r)
+
 	// Set prometheus gauge metrics using the data gathered
 	err = e.processMetrics(data, r, ch)
 	if err != nil {
@@ -105,6 +108,32 @@ func (e *Exporter) getRateLimits(ctx context.Context) (*[]RateLimit, error) {
 	}
 
 	return &rls, nil
+}
+
+func (e *Exporter) rateLimitRefresh(rates *[]RateLimit) {
+	if e.GitHubRateLimit <= 0 || rates == nil {
+		return
+	}
+
+	for _, rl := range *rates {
+		if rl.Resource == "core" && rl.Remaining <= e.GitHubRateLimit {
+			log.Infof("GitHub API core rate limit is low (%.0f remaining, threshold: %.0f)", rl.Remaining, e.GitHubRateLimit)
+			if !e.GitHubApp {
+				log.Warn("GITHUB_RATE_LIMIT threshold breached but GitHub App auth is not configured; cannot refresh token automatically")
+				return
+			}
+
+			log.Info("Refreshing GitHub App installation token due to low rate limit")
+			newClient, err := e.GetClient()
+			if err != nil {
+				log.Errorf("refreshing GitHub App client after low rate limit: %v", err)
+				return
+			}
+
+			e.Client = newClient
+			return
+		}
+	}
 }
 
 // getRepoMetrics fetches metrics for the configured repositories

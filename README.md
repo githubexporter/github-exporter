@@ -18,6 +18,7 @@ This exporter is configured via environment variables. All variables are optiona
 | `GITHUB_APP_INSTALLATION_ID`  | The Installation ID of the GitHub App. Required if `GITHUB_APP` is `true`.         |                          |
 | `GITHUB_APP_KEY_PATH`         | Path to the GitHub App private key file. Required if `GITHUB_APP` is `true`.       |                          |
 | `GITHUB_RATE_LIMIT_ENABLED`   | Whether to fetch GitHub API rate limit metrics (`true` or `false`).                | `true`                   |
+| `GITHUB_RATE_LIMIT`           | Core API quota threshold for proactive GitHub App token refresh. When the remaining `core` requests drop below this value, a new installation token is requested. `0` disables this behaviour. | `0` |
 | `GITHUB_RESULTS_PER_PAGE`     | Number of results to request per page from the GitHub API (max 100).               | `100`                    |
 | `FETCH_REPO_RELEASES_ENABLED` | Whether to fetch repository release metrics (`true` or `false`).                   | `true`                   |
 | `FETCH_ORGS_CONCURRENCY`      | Number of concurrent requests to make when fetching organization data.             | `1`                      |
