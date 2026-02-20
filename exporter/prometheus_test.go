@@ -31,7 +31,9 @@ func writeTempRSAKey(t *testing.T) string {
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	})
 	require.NoError(t, err)
+
 	t.Cleanup(func() { os.Remove(f.Name()) })
+
 	return f.Name()
 }
 
