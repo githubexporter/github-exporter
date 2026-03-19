@@ -1,10 +1,18 @@
 package config
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"net/url"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/gofri/go-github-pagination/githubpagination"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -227,4 +235,53 @@ func TestGetClient(t *testing.T) {
 			assert.Equal(t, client.BaseURL.Path, tt.expectedPath)
 		})
 	}
+}
+
+func TestGetClientGitHubAppEnterpriseTransportBaseURL(t *testing.T) {
+	privateKeyPath := writeTempPrivateKeyFile(t)
+
+	t.Setenv("GITHUB_APP", "true")
+	t.Setenv("GITHUB_APP_KEY_PATH", privateKeyPath)
+	t.Setenv("GITHUB_APP_ID", "1")
+	t.Setenv("GITHUB_APP_INSTALLATION_ID", "999999")
+	t.Setenv("API_URL", "https://github.enterprise.test/api/v3")
+
+	cfg, err := Init()
+	assert.NoError(t, err)
+
+	client, err := cfg.GetClient()
+	assert.NoError(t, err)
+
+	paginator, ok := client.Client().Transport.(*githubpagination.GitHubPagination)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	installationTransport, ok := paginator.Base.(*ghinstallation.Transport)
+	if !assert.True(t, ok) {
+		return
+	}
+
+	assert.Equal(t, "https://github.enterprise.test/api/v3", installationTransport.BaseURL)
+}
+
+func writeTempPrivateKeyFile(t *testing.T) string {
+	t.Helper()
+
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("generating rsa key: %v", err)
+	}
+
+	keyPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	})
+
+	path := filepath.Join(t.TempDir(), "github-app-private-key.pem")
+	if err := os.WriteFile(path, keyPEM, 0o600); err != nil {
+		t.Fatalf("writing private key file: %v", err)
+	}
+
+	return path
 }

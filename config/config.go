@@ -89,10 +89,20 @@ func (c *Config) GetClient() (*github.Client, error) {
 
 	// Add custom transport for GitHub App authentication if enabled
 	if c.GitHubApp {
-		itr, err := ghinstallation.NewKeyFromFile(transport, c.GitHubAppId, c.GitHubAppInstallationId, c.GitHubAppKeyPath)
+		itr, err := ghinstallation.NewKeyFromFile(
+			transport,
+			c.GitHubAppId,
+			c.GitHubAppInstallationId,
+			c.GitHubAppKeyPath,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("creating GitHub App installation transport: %v", err)
 		}
+
+		if c.ApiUrl != nil && c.ApiUrl.String() != "https://api.github.com" {
+			itr.BaseURL = c.ApiUrl.String()
+		}
+
 		transport = itr
 	}
 
