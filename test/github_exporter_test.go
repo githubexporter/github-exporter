@@ -63,6 +63,7 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_rate_reset{resource="search"} 3e+09`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 10`)).
 		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo",user="myOrg"} 3`)).
+		Assert(bodyContains(`github_repo_releases{repo="myRepo",user="myOrg"} 2`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 2`)).
 		Assert(bodyContains(`github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 946`)).
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
@@ -73,6 +74,7 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_windows_amd64.tar.gz",release="2.0.0",repo="myRepo",tag="2.0.0",user="myOrg"} 55`)).
 		Assert(bodyContains(`github_repo_forks{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myUser"} 10`)).
 		Assert(bodyContains(`github_repo_pull_request_count{repo="myRepo",user="myUser"} 3`)).
+		Assert(bodyContains(`github_repo_releases{repo="myRepo",user="myUser"} 2`)).
 		Assert(bodyContains(`github_repo_open_issues{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myUser"} 2`)).
 		Assert(bodyContains(`github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myUser"} 946`)).
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myUser"} 120`)).
@@ -81,6 +83,29 @@ func TestGithubExporter(t *testing.T) {
 		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-02-28T08:25:53Z",name="myRepo_1.3.0_windows_amd64.tar.gz",release="1.3.0",repo="myRepo",tag="1.3.0",user="myUser"} 21`)).
 		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_checksums.txt",release="2.0.0",repo="myRepo",tag="2.0.0",user="myUser"} 14564`)).
 		Assert(bodyContains(`github_repo_release_downloads{created_at="2019-05-02T15:22:16Z",name="myRepo_2.0.0_windows_amd64.tar.gz",release="2.0.0",repo="myRepo",tag="2.0.0",user="myUser"} 55`)).
+		Status(http.StatusOK).
+		End()
+}
+
+func TestGithubExporterReleasesDisabled(t *testing.T) {
+	t.Setenv("FETCH_REPO_RELEASES_ENABLED", "false")
+	test, collector := apiTest(withConfig())
+	defer prometheus.Unregister(&collector)
+
+	test.Mocks(
+		githubRepos(),
+		githubPulls(),
+		githubUserRepos(),
+		githubUserPulls(),
+		githubOrgRepos(),
+		githubPulls(),
+		githubRateLimit(),
+	).
+		Get("/metrics").
+		Expect(t).
+		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
+		Assert(bodyNotContains(`github_repo_releases`)).
+		Assert(bodyNotContains(`github_repo_release_downloads`)).
 		Status(http.StatusOK).
 		End()
 }
@@ -235,6 +260,20 @@ func bodyContains(substr string) func(*http.Response, *http.Request) error {
 		response := string(bytes)
 		if !strings.Contains(response, substr) {
 			return fmt.Errorf("response did not contain substring '%s'", response)
+		}
+		return nil
+	}
+}
+
+func bodyNotContains(substr string) func(*http.Response, *http.Request) error {
+	return func(res *http.Response, req *http.Request) error {
+		bytes, err := io.ReadAll(res.Body)
+		if err != nil {
+			panic(err)
+		}
+		response := string(bytes)
+		if strings.Contains(response, substr) {
+			return fmt.Errorf("response unexpectedly contained substring '%s'", substr)
 		}
 		return nil
 	}

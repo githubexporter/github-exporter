@@ -33,6 +33,9 @@ github_repo_open_issues{archived="false",fork="false",language="Go",license="mit
 # HELP github_repo_pull_request_count Total number of pull requests for given repository
 # TYPE github_repo_pull_request_count gauge
 github_repo_pull_request_count{repo="github-exporter",user="githubexporter"} 7
+# HELP github_repo_releases Total number of releases for given repository
+# TYPE github_repo_releases gauge
+github_repo_releases{repo="github-exporter",user="githubexporter"} 20
 # HELP github_repo_size_kb Size in KB for given repository
 # TYPE github_repo_size_kb gauge
 github_repo_size_kb{archived="false",fork="false",language="Go",license="mit",private="false",repo="github-exporter",user="githubexporter"} 2185

@@ -57,6 +57,11 @@ func AddMetrics(cfg *config.Config) map[string]*prometheus.Desc {
 		"Size in KB for given repository",
 		[]string{"repo", "user", "private", "fork", "archived", "license", "language"}, nil,
 	)
+	APIMetrics["Releases"] = prometheus.NewDesc(
+		prometheus.BuildFQName("github", "repo", "releases"),
+		"Total number of releases for given repository",
+		[]string{"repo", "user"}, nil,
+	)
 	APIMetrics["ReleaseDownloads"] = prometheus.NewDesc(
 		prometheus.BuildFQName("github", "repo", "release_downloads"),
 		"Download count for a given release",
@@ -101,6 +106,12 @@ func (e *Exporter) processMetrics(data []*Datum, rates *[]RateLimit, ch chan<- p
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Forks"], prometheus.GaugeValue, float64(x.Forks), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Watchers"], prometheus.GaugeValue, float64(x.Watchers), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
 		ch <- prometheus.MustNewConstMetric(e.APIMetrics["Size"], prometheus.GaugeValue, float64(x.Size), x.Name, x.Owner.Login, strconv.FormatBool(x.Private), strconv.FormatBool(x.Fork), strconv.FormatBool(x.Archived), x.License.Key, x.Language)
+
+		// Only report a release count when releases were fetched, so a
+		// disabled fetch isn't reported as zero releases
+		if e.FetchRepoReleasesEnabled {
+			ch <- prometheus.MustNewConstMetric(e.APIMetrics["Releases"], prometheus.GaugeValue, float64(len(x.Releases)), x.Name, x.Owner.Login)
+		}
 
 		for _, release := range x.Releases {
 			for _, asset := range release.Assets {
