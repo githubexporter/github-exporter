@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/githubexporter/github-exporter/config"
@@ -22,19 +23,14 @@ func writeTempRSAKey(t *testing.T) string {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
-	f, err := os.CreateTemp("", "test-github-app-key-*.pem")
-	require.NoError(t, err)
-	defer f.Close()
-
-	err = pem.Encode(f, &pem.Block{
+	path := filepath.Join(t.TempDir(), "test-github-app-key.pem")
+	keyPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	})
-	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, keyPEM, 0o600))
 
-	t.Cleanup(func() { os.Remove(f.Name()) })
-
-	return f.Name()
+	return path
 }
 
 func newTestExporter(cfg config.Config) *Exporter {
