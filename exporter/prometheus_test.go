@@ -5,11 +5,16 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
 	"github.com/githubexporter/github-exporter/config"
 	"github.com/google/go-github/v76/github"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -41,6 +46,74 @@ func newTestExporter(cfg config.Config) *Exporter {
 	return &Exporter{
 		Client: github.NewClient(nil),
 		Config: cfg,
+	}
+}
+
+// TestCollectDoesNotPanic checks that a scrape ends cleanly, with no metrics,
+// when a GitHub API response can't be used. A panic in Collect would crash the
+// exporter.
+func TestCollectDoesNotPanic(t *testing.T) {
+	const repo = `{"name":"myRepo","owner":{"login":"myOrg"}}`
+	const forbidden = `{"message":"Resource not accessible by personal access token"}`
+
+	responses := map[string]string{
+		"/repos/myOrg/myRepo":          repo,
+		"/users/myOrg/repos":           "[" + repo + "]",
+		"/orgs/myOrg/repos":            "[" + repo + "]",
+		"/repos/myOrg/myRepo/releases": "[]",
+		"/repos/myOrg/myRepo/pulls":    "[]",
+		"/rate_limit":                  `{"resources":{"core":{"limit":1,"remaining":1,"reset":1}}}`,
+	}
+
+	tests := []struct {
+		name   string
+		path   string
+		status int
+		body   string
+	}{
+		{"repository forbidden", "/repos/myOrg/myRepo", http.StatusForbidden, forbidden},
+		{"user repositories forbidden", "/users/myOrg/repos", http.StatusForbidden, forbidden},
+		{"organisation repositories forbidden", "/orgs/myOrg/repos", http.StatusForbidden, forbidden},
+		{"releases forbidden", "/repos/myOrg/myRepo/releases", http.StatusForbidden, forbidden},
+		{"pull requests forbidden", "/repos/myOrg/myRepo/pulls", http.StatusForbidden, forbidden},
+		{"rate limit forbidden", "/rate_limit", http.StatusForbidden, forbidden},
+		{"rate limit without resources", "/rate_limit", http.StatusOK, `{}`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == tt.path {
+					w.WriteHeader(tt.status)
+					fmt.Fprint(w, tt.body)
+					return
+				}
+				fmt.Fprint(w, responses[r.URL.Path])
+			}))
+			defer server.Close()
+
+			baseURL, err := url.Parse(server.URL + "/")
+			require.NoError(t, err)
+
+			cfg := config.Config{
+				Repositories:             []string{"myOrg/myRepo"},
+				Organisations:            []string{"myOrg"},
+				Users:                    []string{"myOrg"},
+				GitHubRateLimitEnabled:   true,
+				FetchRepoReleasesEnabled: true,
+				FetchReposConcurrency:    1,
+				FetchOrgsConcurrency:     1,
+				FetchOrgReposConcurrency: 1,
+				FetchUsersConcurrency:    1,
+			}
+			e := newTestExporter(cfg)
+			e.APIMetrics = AddMetrics(&cfg)
+			e.Client.BaseURL = baseURL
+
+			ch := make(chan prometheus.Metric, 100)
+			assert.NotPanics(t, func() { e.Collect(ch) })
+			assert.Empty(t, ch)
+		})
 	}
 }
 

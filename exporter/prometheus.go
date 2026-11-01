@@ -77,6 +77,10 @@ func (e *Exporter) getRateLimits(ctx context.Context) (*[]RateLimit, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetching rate limits: %w", err)
 	}
+	// A successful response isn't guaranteed to include the resources object
+	if rates == nil {
+		return nil, fmt.Errorf("fetching rate limits: response did not include rate limit data")
+	}
 
 	rateLimits := map[string]*github.Rate{
 		"actions_runner_registration": rates.ActionsRunnerRegistration,
