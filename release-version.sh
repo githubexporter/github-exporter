@@ -15,10 +15,11 @@ if ! [[ "$version" =~ ^v[0-9.]+$ ]]; then
   exit 1
 fi
 
-go_toolchain_version=$(go mod edit -json | jq -r .Toolchain | sed 's/go//')
-echo "Go Toolchain Version: $go_toolchain_version"
-if ! [[ "$go_toolchain_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "Go Toolchain Version ($go_toolchain_version) is in the wrong format."
+# use the toolchain version, falling back to the go version if toolchain is omitted.
+go_version=$(go mod edit -json | jq -r '.Toolchain // .Go' | sed 's/go//')
+echo "Go Version: $go_version"
+if ! [[ "$go_version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+  echo "Go Version ($go_version) is in the wrong format."
   exit 1
 fi
 
@@ -27,4 +28,4 @@ if docker manifest inspect githubexporter/github-exporter:$version > /dev/null 2
     exit 1
 fi
 
-docker buildx build --platform linux/amd64,linux/arm64 --build-arg GOLANG_VERSION=$go_toolchain_version -t githubexporter/github-exporter:latest -t githubexporter/github-exporter:$version --push .
+docker buildx build --platform linux/amd64,linux/arm64 --build-arg GOLANG_VERSION=$go_version -t githubexporter/github-exporter:latest -t githubexporter/github-exporter:$version --push .
