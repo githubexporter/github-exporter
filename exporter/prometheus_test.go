@@ -85,10 +85,10 @@ func TestCollectDoesNotPanic(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == tt.path {
 					w.WriteHeader(tt.status)
-					fmt.Fprint(w, tt.body)
+					_, _ = fmt.Fprint(w, tt.body)
 					return
 				}
-				fmt.Fprint(w, responses[r.URL.Path])
+				_, _ = fmt.Fprint(w, responses[r.URL.Path])
 			}))
 			defer server.Close()
 
