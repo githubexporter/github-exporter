@@ -42,6 +42,15 @@ If none of these credentials are provided, the exporter will make unauthenticate
 
 ## Install and deploy
 
+### Helm Chart
+
+> [!NOTE]
+> This chart is maintained by a third party and is not officially supported or endorsed by this project. Review it before use, and report chart issues to its maintainers.
+
+* https://github.com/k8sonlab/publiccharts/tree/main/charts/github-exporter
+
+### Docker
+
 Run manually from Docker Hub:
 ```
 docker run -d --restart=always -p 9171:9171 -e REPOS="infinityworks/ranch-eye, infinityworks/prom-conf" githubexporter/github-exporter
@@ -57,7 +66,7 @@ Build a docker image:
 docker build -t <image-name> .
 ```
 
-## Docker compose
+### Docker Compose
 
 ```
 github-exporter:
@@ -73,7 +82,7 @@ github-exporter:
       - GITHUB_TOKEN=<your github api token>
 ```
 
-## Docker compose (GitHub App)
+### Docker Compose (GitHub App)
 
 ```
 github-exporter-github-app:
@@ -112,7 +121,7 @@ make test
 ```
 
 ## Version Release Procedure
-Once a new pull request has been merged into `master` the following script should be executed locally. The script will trigger a new image build in docker hub with the new image having the tag `release-<version>`. The version is taken from the `VERSION` file and must follow semantic versioning. For more information see [semver.org](https://semver.org/).
+Once a new pull request has been merged into `master` the following script should be executed locally. The script will trigger a new image build in docker hub with the new image having the tag `v<semantic-version>`. The version is taken from the `VERSION` file and must follow semantic versioning. For more information see [semver.org](https://semver.org/).
 
 Prior to running the following command ensure the number has been increased to desired version in `VERSION`:
 
