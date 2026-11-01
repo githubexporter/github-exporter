@@ -40,6 +40,56 @@ When authenticating with the GitHub API, the exporter uses credentials in the fo
 
 If none of these credentials are provided, the exporter will make unauthenticated requests, which are subject to very strict rate limits.
 
+## Permissions
+
+The exporter only makes read requests to the GitHub API. The access it needs depends on whether you are monitoring private repositories and which features you have enabled.
+
+### By scenario
+
+| Scenario                                  | Unauthenticated | Personal access token (classic) | Fine-grained personal access token                                                      | GitHub App                                                       |
+|-------------------------------------------|-----------------|---------------------------------|-----------------------------------------------------------------------------------------|------------------------------------------------------------------|
+| Public repositories only                  | Yes (see note)  | No scopes                       | No permissions (public repositories are always readable)                                | No extra permissions                                             |
+| Private repositories                      | No              | `repo`                          | Metadata, Pull requests and Contents: read, on the selected repositories                | Metadata, Pull requests and Contents: read, installed on them    |
+| Private repositories, releases disabled   | No              | `repo`                          | Metadata and Pull requests: read, on the selected repositories                          | Metadata and Pull requests: read, installed on them              |
+
+> [!NOTE]
+> Unauthenticated requests are limited to 60 per hour, and each scrape makes at least two requests per repository, so a token is recommended even for public repositories.
+
+Classic tokens have no read-only scope for private repositories, so `repo` also grants write access. Prefer a fine-grained token or a GitHub App where possible.
+
+### By feature
+
+Permissions below are for fine-grained tokens and GitHub Apps, and are only needed for private repositories.
+
+| Feature                                  | Permission            | Endpoint                             | Metrics                                                                                   |
+|------------------------------------------|-----------------------|--------------------------------------|-------------------------------------------------------------------------------------------|
+| `REPOS`                                  | Metadata: read        | `GET /repos/{owner}/{repo}`          | `github_repo_stars`, `github_repo_forks`, `github_repo_watchers`, `github_repo_size_kb`   |
+| `ORGS`                                   | Metadata: read        | `GET /orgs/{org}/repos`              | As above                                                                                  |
+| `USERS`                                  | Metadata: read        | `GET /users/{username}/repos`        | As above                                                                                  |
+| Pull requests (always fetched)           | Pull requests: read   | `GET /repos/{owner}/{repo}/pulls`    | `github_repo_pull_request_count`, `github_repo_open_issues`                               |
+| `FETCH_REPO_RELEASES_ENABLED` (default)  | Contents: read        | `GET /repos/{owner}/{repo}/releases` | `github_repo_releases`, `github_repo_release_downloads`                                   |
+| `GITHUB_RATE_LIMIT_ENABLED` (default)    | None                  | `GET /rate_limit`                    | `github_rate_limit`, `github_rate_remaining`, `github_rate_reset`                         |
+| `GITHUB_RATE_LIMIT`                      | None                  | None beyond the rate limit request   | None. Refreshes the GitHub App token using its private key                                |
+
+The Metadata permission is included automatically in fine-grained tokens and GitHub Apps. No organization or account permissions are needed.
+
+### Limitations
+
+* **A missing permission fails the whole scrape.** If any request fails, the exporter logs the error and returns no repository metrics for that scrape, not just those for the affected repository. For example, a token without Contents access on one private repository loses metrics for all repositories unless `FETCH_REPO_RELEASES_ENABLED=false` is set.
+* **`USERS` only finds public repositories**, whatever the credentials. List private repositories owned by a user in `REPOS` instead.
+* **Fine-grained tokens and GitHub Apps cover private repositories for one account.** A fine-grained token has a single resource owner, and `GITHUB_APP_INSTALLATION_ID` selects a single installation. To monitor private repositories across several accounts, use a classic token or run one exporter per account.
+* **`ORGS` only returns the private repositories the credentials can access.** Others are silently left out rather than causing an error.
+* **Draft releases are only visible with push access.** `github_repo_releases` can therefore be higher with a classic `repo` token from a user with push access than with read-only access.
+
+### Organization policies
+
+* Organizations using SAML single sign-on require classic tokens to be [authorized for SSO](https://docs.github.com/en/authentication/authenticating-with-saml-single-sign-on/authorizing-a-personal-access-token-for-use-with-saml-single-sign-on).
+* Organizations can block fine-grained tokens or require approval for them. Until approved, a token can only read public resources.
+
+### Troubleshooting
+
+API responses for fine-grained tokens and GitHub Apps include an `X-Accepted-GitHub-Permissions` header listing the permissions an endpoint requires. See GitHub's [fine-grained token](https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens) and [GitHub App](https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps) permission references for more detail.
+
 ## Install and deploy
 
 ### Helm Chart
