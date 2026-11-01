@@ -23,7 +23,7 @@ jobs:
           echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
 
       - name: Run Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@8f28faec26515256b6d22074d1d2a8986f4cbd87 # master
         env:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
         with:
@@ -36,3 +36,18 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
+
+  # GitHub disables scheduled workflows after 60 days without repository
+  # activity, so re-enable this workflow on each scheduled run
+  keepalive:
+    name: Keep Schedule Enabled
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Enable workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PUT "repos/$GITHUB_REPOSITORY/actions/workflows/container-scan.yml/enable"
