@@ -24,7 +24,7 @@ This exporter is configured via environment variables. All variables are optiona
 | `FETCH_ORGS_CONCURRENCY`      | Number of concurrent requests to make when fetching organization data.             | `1`                      |
 | `FETCH_ORG_REPOS_CONCURRENCY` | Number of concurrent requests to make when fetching organization repository data.  | `1`                      |
 | `FETCH_USERS_CONCURRENCY`     | Number of concurrent requests to make when fetching user data.                     | `1`                      |
-| `FETCH_USERS_CONCURRENCY`     | Number of concurrent requests to make when fetching repository data.               | `1`                      |
+| `FETCH_REPOS_CONCURRENCY`     | Number of concurrent requests to make when fetching repository data.               | `1`                      |
 | `API_URL`                     | GitHub API URL. You should not need to change this unless using GitHub Enterprise. | `https://api.github.com` |
 | `LISTEN_PORT`                 | The port the exporter will listen on.                                              | `9171`                   |
 | `METRICS_PATH`                | The HTTP path to expose Prometheus metrics.                                        | `/metrics`               |
@@ -35,8 +35,8 @@ This exporter is configured via environment variables. All variables are optiona
 When authenticating with the GitHub API, the exporter uses credentials in the following order of precedence:
 
 1. **GitHub App credentials** (`GITHUB_APP=true` with `GITHUB_APP_ID`, `GITHUB_APP_INSTALLATION_ID`, and `GITHUB_APP_KEY_PATH`): If enabled, the exporter authenticates as a GitHub App and ignores any personal access token or token file.
-2. **Token file** (`GITHUB_TOKEN_FILE`): If a token file is provided (and GitHub App is not enabled), the exporter reads the token from the specified file.
-3. **Direct token** (`GITHUB_TOKEN`): If neither GitHub App nor token file is provided, the exporter uses the token supplied directly via the environment variable.
+2. **Direct token** (`GITHUB_TOKEN`): If a token is supplied directly via the environment variable (and GitHub App is not enabled), the exporter uses it and ignores any token file.
+3. **Token file** (`GITHUB_TOKEN_FILE`): If neither GitHub App nor a direct token is provided, the exporter reads the token from the specified file.
 
 If none of these credentials are provided, the exporter will make unauthenticated requests, which are subject to very strict rate limits.
 
@@ -64,8 +64,8 @@ Permissions below are for fine-grained tokens and GitHub Apps, and are only need
 | Feature                                  | Permission            | Endpoint                             | Metrics                                                                                   |
 |------------------------------------------|-----------------------|--------------------------------------|-------------------------------------------------------------------------------------------|
 | `REPOS`                                  | Metadata: read        | `GET /repos/{owner}/{repo}`          | `github_repo_stars`, `github_repo_forks`, `github_repo_watchers`, `github_repo_size_kb`   |
-| `ORGS`                                   | Metadata: read        | `GET /orgs/{org}/repos`              | As above                                                                                  |
-| `USERS`                                  | Metadata: read        | `GET /users/{username}/repos`        | As above                                                                                  |
+| `ORGS`                                   | Metadata: read        | `GET /orgs/{org}/repos`, then `GET /repos/{owner}/{repo}` for each repository | As above                                         |
+| `USERS`                                  | Metadata: read        | `GET /users/{username}/repos`, then `GET /repos/{owner}/{repo}` for each repository | As above                                   |
 | Pull requests (always fetched)           | Pull requests: read   | `GET /repos/{owner}/{repo}/pulls`    | `github_repo_pull_request_count`, `github_repo_open_issues`                               |
 | `FETCH_REPO_RELEASES_ENABLED` (default)  | Contents: read        | `GET /repos/{owner}/{repo}/releases` | `github_repo_releases`, `github_repo_release_downloads`                                   |
 | `GITHUB_RATE_LIMIT_ENABLED` (default)    | None                  | `GET /rate_limit`                    | `github_rate_limit`, `github_rate_remaining`, `github_rate_reset`                         |

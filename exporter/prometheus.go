@@ -191,7 +191,7 @@ func (e *Exporter) getUserMetrics(ctx context.Context) ([]*Datum, error) {
 			}
 
 			for _, repo := range repos {
-				d, err := e.parseRepo(ctx, *repo)
+				d, err := e.parseListedRepo(ctx, repo)
 				if err != nil {
 					return fmt.Errorf("parsing user repository data: %v", err)
 				}
@@ -230,7 +230,7 @@ func (e *Exporter) getOrgMetrics(ctx context.Context) ([]*Datum, error) {
 
 			for _, repo := range repos {
 				gRepos.Go(func() error {
-					d, err := e.parseRepo(rCtx, *repo)
+					d, err := e.parseListedRepo(rCtx, repo)
 					if err != nil {
 						return fmt.Errorf("parsing organisation repository data: %w", err)
 					}
@@ -254,6 +254,18 @@ func (e *Exporter) getOrgMetrics(ctx context.Context) ([]*Datum, error) {
 	}
 
 	return data, nil
+}
+
+// parseListedRepo fetches the full repository before parsing it, as list
+// endpoints omit fields such as subscribers_count
+func (e *Exporter) parseListedRepo(ctx context.Context, repo *github.Repository) (*Datum, error) {
+	log.Debugf("Fetching data for repository: %s", repo.GetFullName())
+	fullRepo, _, err := e.Client.Repositories.Get(ctx, repo.GetOwner().GetLogin(), repo.GetName())
+	if err != nil {
+		return nil, fmt.Errorf("fetching repository data: %w", err)
+	}
+
+	return e.parseRepo(ctx, *fullRepo)
 }
 
 func (e *Exporter) parseRepo(ctx context.Context, repo github.Repository) (*Datum, error) {

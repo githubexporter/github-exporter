@@ -37,9 +37,11 @@ func TestGithubExporter(t *testing.T) {
 		githubReleases(),
 		githubPulls(),
 		githubUserRepos(),
+		githubUserRepo(),
 		githubUserReleases(),
 		githubUserPulls(),
 		githubOrgRepos(),
+		githubRepos(),
 		githubReleases(),
 		githubPulls(),
 		githubRateLimit(),
@@ -96,8 +98,10 @@ func TestGithubExporterReleasesDisabled(t *testing.T) {
 		githubRepos(),
 		githubPulls(),
 		githubUserRepos(),
+		githubUserRepo(),
 		githubUserPulls(),
 		githubOrgRepos(),
+		githubRepos(),
 		githubPulls(),
 		githubRateLimit(),
 	).
@@ -106,6 +110,27 @@ func TestGithubExporterReleasesDisabled(t *testing.T) {
 		Assert(bodyContains(`github_repo_stars{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 120`)).
 		Assert(bodyNotContains(`github_repo_releases`)).
 		Assert(bodyNotContains(`github_repo_release_downloads`)).
+		Status(http.StatusOK).
+		End()
+}
+
+func TestGithubExporterOrgWatchers(t *testing.T) {
+	conf := withConfig()
+	conf.Repositories = nil
+	conf.Users = nil
+	test, collector := apiTest(conf)
+	defer prometheus.Unregister(&collector)
+
+	test.Mocks(
+		githubOrgRepos(),
+		githubRepos(),
+		githubReleases(),
+		githubPulls(),
+		githubRateLimit(),
+	).
+		Get("/metrics").
+		Expect(t).
+		Assert(bodyContains(`github_repo_watchers{archived="false",fork="false",language="Go",license="mit",private="false",repo="myRepo",user="myOrg"} 5`)).
 		Status(http.StatusOK).
 		End()
 }
@@ -170,6 +195,16 @@ func githubUserRepos() *apitest.Mock {
 		RespondWith().
 		Times(1).
 		Body(readFile("testdata/user_repos_response.json")).
+		Status(200).
+		End()
+}
+
+func githubUserRepo() *apitest.Mock {
+	return apitest.NewMock().
+		Get("https://api.github.com/repos/myUser/myRepo").
+		RespondWith().
+		Times(1).
+		Body(readFile("testdata/user_repo_response.json")).
 		Status(200).
 		End()
 }
